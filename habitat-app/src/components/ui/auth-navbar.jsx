@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function AuthNavBar() {
   const { data: session, status } = useSession();
@@ -39,9 +40,25 @@ export default function AuthNavBar() {
             )}
             
             {!loading && session && (
-              <>
-                <span className="text-white">
-                  Hello, {session.user.name || session.user.email}
+              <div className="flex items-center space-x-4">
+                {session.user.image ? (
+                  <div className="h-8 w-8 relative">
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || 'Profile'}
+                      fill
+                      className="rounded-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center">
+                    <span className="text-sm font-medium text-indigo-600">
+                      {session.user.name ? session.user.name[0] : session.user.email[0]}
+                    </span>
+                  </div>
+                )}
+                <span className="text-white hidden md:inline">
+                  {session.user.name || session.user.email}
                 </span>
                 <Link
                   href="/protected/dashboard"
@@ -51,17 +68,23 @@ export default function AuthNavBar() {
                 </Link>
                 <Link
                   href="/habitats"
-                  className="inline-block bg-indigo-500 py-2 px-4 border border-transparent rounded-md text-base font-medium text-white hover:bg-opacity-75 mr-2"
+                  className="inline-block bg-indigo-500 py-2 px-4 border border-transparent rounded-md text-base font-medium text-white hover:bg-opacity-75"
                 >
-                  Habitats
+                  All Habitats
+                </Link>
+                <Link
+                  href="/my-images"
+                  className="inline-block bg-indigo-500 py-2 px-4 border border-transparent rounded-md text-base font-medium text-white hover:bg-opacity-75"
+                >
+                  My Habitats
                 </Link>
                 <button
-                    onClick={() => signOut({ callbackUrl: '/' })}
+                  onClick={() => signOut({ callbackUrl: '/' })}
                   className="inline-block bg-white py-2 px-4 border border-transparent rounded-md text-base font-medium text-indigo-600 hover:bg-indigo-50"
                 >
                   Sign out
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>

@@ -16,14 +16,13 @@ export async function POST(req) {
     }
 
     const formData = await req.formData();
-    const file = formData.get('image');
+    const files = formData.getAll('image');
     
-    if (!file) {
-      return NextResponse.json({ message: 'No image uploaded' }, { status: 400 });
+    if (!files || files.length === 0) {
+      return NextResponse.json({ message: 'No images uploaded' }, { status: 400 });
     }
     
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const filename = `${uuidv4()}_${file.name.replace(/\s/g, '_')}`;
+    
     
     // In a real app, you'd use a cloud storage service like AWS S3, Google Cloud Storage, or Azure Blob Storage
     // For this example, we'll store files in the public directory
@@ -32,13 +31,22 @@ export async function POST(req) {
     if (!existsSync(publicDir)) {
         await mkdir(publicDir, { recursive: true });
       }
-    const filePath = path.join(publicDir, filename);
+      const imageUrls = [];
+
+      for (const file of files) {
+        if (file && file.arrayBuffer) {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          const filename = `${uuidv4()}_${file.name.replace(/\s/g, '_')}`;
+          const filePath = path.join(publicDir, filename);
+  
+          await writeFile(filePath, buffer);
+  
+          const imageUrl = `/uploads/${filename}`;
+          imageUrls.push(imageUrl);
+        }
+      }
     
-    await writeFile(filePath, buffer);
-    
-    const imageUrl = `/uploads/${filename}`;
-    
-    return NextResponse.json({ success: true, imageUrl });
+    return NextResponse.json({ success: true, imageUrls });
   } catch (error) {
     console.error('Error uploading image:', error);
     return NextResponse.json(

@@ -18,7 +18,7 @@ export default function HabitatUpload() {
   const [location, setLocation] = useState('');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState(null); // Array of selected files
+  const [selectedFiles, setSelectedFiles] = useState([]); // Array of selected files
 const [previews, setPreviews] = useState(null); // Array of preview URLs
   
   const fileInputRef = useRef(null);
@@ -98,11 +98,13 @@ const [previews, setPreviews] = useState(null); // Array of preview URLs
     
     setIsUploading(true);
     setError('');
-    
+  
     try {
       // Upload image first
       const formData = new FormData();
-      formData.append('image', selectedFiles);
+      for (const file of selectedFiles) {
+        formData.append('image', file); // Append each file with the key 'image'
+      }
       console.log("formData:", formData);
       const uploadResponse = await fetch('/api/upload', {
         method: 'POST',
@@ -122,7 +124,7 @@ try {
     location,
     date: date || new Date().toISOString(),
     notes,
-    imageUrl: uploadData.imageUrl,
+    imageUrl: uploadData.imageUrls,
   });
   console.log("Upload response:", uploadData);
   const habitatResponse = await fetch('/api/habitats', {
@@ -136,7 +138,7 @@ try {
       location,
       date: date || new Date().toISOString(),
       notes,
-      imageUrl: uploadData.imageUrl,
+      imageUrl: uploadData.imageUrls,
     }),
   });
   
@@ -169,7 +171,7 @@ try {
       setLocation('');
       setDate('');
       setNotes('');
-      setSelectedFile(null);
+      setSelectedFiles(null);
       setPreviews(null);
       
       // Redirect to habitats page or refresh the current page

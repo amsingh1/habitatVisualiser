@@ -105,6 +105,16 @@ export const authOptions = {
   session: {
     strategy: 'jwt',
   },
+
+  debug: true,  // Enable debug messages
+  logger: {
+    error: (code, metadata) => {
+      console.error(code, metadata);
+    },
+    warn: (code) => {
+      console.warn(code);
+    },
+  },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
