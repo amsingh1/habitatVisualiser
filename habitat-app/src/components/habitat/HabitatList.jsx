@@ -2,10 +2,20 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import useSWR from 'swr';
 
-export default function HabitatList({ habitats }) {
+// Create a fetcher function
+const fetcher = (...args) => fetch(...args).then(res => res.json());
+
+export default function HabitatList() {
   const [selectedHabitat, setSelectedHabitat] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Use SWR to fetch and keep habitats data up-to-date
+  const { data, error, isLoading } = useSWR('/api/habitats', fetcher);
+  
+  // Extract habitats from data
+  const habitats = data?.habitats || [];
 
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -42,6 +52,25 @@ export default function HabitatList({ habitats }) {
     setCurrentImageIndex(index);
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="text-center py-10 bg-gray-50 rounded-lg">
+        <p className="text-gray-500">Loading habitats...</p>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="text-center py-10 bg-red-50 rounded-lg">
+        <p className="text-red-500">Error loading habitats. Please try again.</p>
+      </div>
+    );
+  }
+
+  // Show empty state
   if (habitats.length === 0) {
     return (
       <div className="text-center py-10 bg-gray-50 rounded-lg">

@@ -4,11 +4,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { mutate } from 'swr';
 
 export default function HabitatUpload() {
   const { data: session } = useSession();
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0); // Added for upload progress
   const [error, setError] = useState('');
   const [habitatSuggestions, setHabitatSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -19,7 +21,7 @@ export default function HabitatUpload() {
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]); // Array of selected files
-const [previews, setPreviews] = useState(null); // Array of preview URLs
+  const [previews, setPreviews] = useState([]); // Array of preview URLs
   
   const fileInputRef = useRef(null);
 
@@ -86,8 +88,8 @@ const [previews, setPreviews] = useState(null); // Array of preview URLs
       return;
     }
     
-    if (!selectedFiles) {
-      setError('Please select an image to upload');
+    if (!selectedFiles || selectedFiles.length === 0) {
+      setError('Please select at least one image to upload');
       return;
     }
     
@@ -97,83 +99,73 @@ const [previews, setPreviews] = useState(null); // Array of preview URLs
     }
     
     setIsUploading(true);
+    setUploadProgress(10); // Start progress indicator
     setError('');
   
     try {
-      // Upload image first
+      // Upload images to Cloudinary
       const formData = new FormData();
       for (const file of selectedFiles) {
-        formData.append('image', file); // Append each file with the key 'image'
+        formData.append('image', file);
       }
-      console.log("formData:", formData);
+      
+      setUploadProgress(30); // Update progress
+      
       const uploadResponse = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
       
+      setUploadProgress(70); // Update progress
+      
       const uploadData = await uploadResponse.json();
-      console.log("Upload response:", uploadData);
+      
       if (!uploadResponse.ok) {
         throw new Error(uploadData.message || 'Error uploading image');
       }
       
-     // Create habitat entry with image URL
-try {
-  console.log("Sending habitat data:", {
-    habitatName,
-    location,
-    date: date || new Date().toISOString(),
-    notes,
-    imageUrl: uploadData.imageUrls,
-  });
-  console.log("Upload response:", uploadData);
-  const habitatResponse = await fetch('/api/habitats', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({
-      habitatName,
-      location,
-      date: date || new Date().toISOString(),
-      notes,
-      imageUrl: uploadData.imageUrls,
-    }),
-  });
-  
-  // Check response status
-  console.log("Response status:", habitatResponse.status);
-  
-  // Get response as text first
-  const responseText = await habitatResponse.text();
-  console.log("Response text:", responseText);
-  
-  // Only try to parse as JSON if there's content
-  const habitatData = responseText ? JSON.parse(responseText) : {};
-  
-  if (!habitatResponse.ok) {
-    throw new Error(habitatData.message || `Server error: ${habitatResponse.status}`);
-  }
-  
-  console.log('Habitat created successfully:', habitatData);
-  
-  // Rest of your success handling code...
-  
-} catch (error) {
-  console.error('Error creating habitat:', error);
-  setError(error.message || 'An unexpected error occurred');
-  setIsUploading(false);
-}
+      setUploadProgress(80); // Update progress
       
+      // Create habitat entry with image URLs
+      const habitatResponse = await fetch('/api/habitats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          habitatName,
+          location,
+          date: date || new Date().toISOString(),
+          notes,
+          imageUrl: uploadData.imageUrls, // This is now coming from Cloudinary
+        }),
+      });
+      
+      setUploadProgress(95); // Update progress
+      
+      // Get response as text first
+      const responseText = await habitatResponse.text();
+      
+      // Only try to parse as JSON if there's content
+      const habitatData = responseText ? JSON.parse(responseText) : {};
+      
+      if (!habitatResponse.ok) {
+        throw new Error(habitatData.message || `Server error: ${habitatResponse.status}`);
+      }
+      
+      setUploadProgress(100); // Complete progress
+      mutate('/api/habitats');
       // Reset form
       setHabitatName('');
       setLocation('');
       setDate('');
       setNotes('');
-      setSelectedFiles(null);
-      setPreviews(null);
+      setSelectedFiles([]);
+      setPreviews([]);
       
+      setSuccess('Habitat uploaded successfully!');
+      setTimeout(() => setSuccess(''), 3000);
       // Redirect to habitats page or refresh the current page
       router.push('/habitats');
       router.refresh();
@@ -182,11 +174,16 @@ try {
       setError(error.message || 'An unexpected error occurred');
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
+  
   const removeImage = (index) => {
-    const updatedFiles = selectedFiles.filter((_, i) => i !== index);
-    const updatedPreviews = previews.filter((_, i) => i !== index);
+    const updatedFiles = [...selectedFiles];
+    const updatedPreviews = [...previews];
+    
+    updatedFiles.splice(index, 1);
+    updatedPreviews.splice(index, 1);
   
     setSelectedFiles(updatedFiles);
     setPreviews(updatedPreviews);
@@ -219,6 +216,7 @@ try {
                       className="object-contain"
                     />
                     <button
+                      type="button" // Added button type to prevent form submission
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent the click event from propagating to the parent
                         removeImage(index);
@@ -235,7 +233,8 @@ try {
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                <p className="mt-2">Click to upload a habitat image</p>
+                <p className="mt-2">Click to upload habitat images</p>
+                <p className="text-xs text-gray-500 mt-1">Images will be stored in Cloudinary</p>
               </div>
             )}
             <input
@@ -248,6 +247,16 @@ try {
             />
           </div>
         </div>
+        
+        {/* Progress bar for upload */}
+        {isUploading && (
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+            <div 
+              className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" 
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+        )}
         
         <div className="mb-4 relative">
           <label htmlFor="habitatName" className="block text-sm font-medium text-gray-700 mb-1">

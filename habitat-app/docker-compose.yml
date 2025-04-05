@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  nextjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextjs-app
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env.local
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/habitat_db?directConnection=true&serverSelectionTimeoutMS=2000
+    volumes:
+      - ./public/uploads:/app/public/uploads
+      - ./public/uploads:/uploads
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    volumes:
+      - mongodb_data:/data/db
+# No external port mapping needed
+    # ports:
+    #   - "27018:27017"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local

@@ -55,7 +55,7 @@ export async function POST(req) {
     console.log("Habitat created successfully:", habitat);
     
     return NextResponse.json(
-      { success: true, habitat },
+      { success: true, message: 'Habitat created successfully', habitat },
       { status: 201 }
     );
   } catch (error) {
@@ -80,7 +80,7 @@ export async function GET(req) {
     }
     
     // Fetch all habitat entries
-    const habitats = await Habitat.find().sort({ createdAt: -1 });
+    const habitats = await Habitat.find().sort({ createdAt: -1 }).lean();
     
     return NextResponse.json({ habitats });
   } catch (error) {
