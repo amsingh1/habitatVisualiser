@@ -6,6 +6,10 @@ const nextConfig = {
       
     },
     // any other existing configuration...
+    experimental: {
+      // This prevents static generation of pages with server components
+      serverComponentsExternalPackages: ['mongoose'],
+    }
   };
   
   // Use ES module export syntax instead of CommonJS
