@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --registry=https://registry.npmjs.org/
 
 # Copy source code
 COPY . .
