@@ -20,6 +20,8 @@ export default function HabitatUpload() {
   const [location, setLocation] = useState('');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [coordinate, setCoordinate] = useState(''); // Added for GPS coordinate
+  const [success, setSuccess] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]); // Array of selected files
   const [previews, setPreviews] = useState([]); // Array of preview URLs
   
@@ -98,6 +100,10 @@ export default function HabitatUpload() {
       return;
     }
     
+    if (!coordinate) {
+      setError('GPS coordinate is required');
+      return;
+    }
     setIsUploading(true);
     setUploadProgress(10); // Start progress indicator
     setError('');
@@ -134,6 +140,7 @@ export default function HabitatUpload() {
         },
         credentials: 'include',
         body: JSON.stringify({
+          gpsCoordinate:coordinate,
           habitatName,
           location,
           date: date || new Date().toISOString(),
@@ -162,6 +169,7 @@ export default function HabitatUpload() {
       setDate('');
       setNotes('');
       setSelectedFiles([]);
+      setCoordinate('');
       setPreviews([]);
       
       setSuccess('Habitat uploaded successfully!');
@@ -297,6 +305,21 @@ export default function HabitatUpload() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="Enter location"
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="coordinate" className="block text-sm font-medium text-gray-700 mb-1">
+            GPS Coordinate
+          </label>
+          <input
+            type="text"
+            id="coordinate"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={coordinate}
+            onChange={(e) => setCoordinate(e.target.value)}
+            placeholder="Enter GPS coordinate"
             required
           />
         </div>

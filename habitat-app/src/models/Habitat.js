@@ -10,6 +10,10 @@ const HabitatSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide a location'],
     },
+    gpsCoordinate: {
+      type: String,
+      required: [true, 'Please provide a coordinate'],
+    },
     date: {
       type: Date,
       required: [true, 'Please provide a date'],

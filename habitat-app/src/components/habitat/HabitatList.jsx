@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import useSWR from 'swr';
 
@@ -16,6 +16,31 @@ export default function HabitatList() {
   
   // Extract habitats from data
   const habitats = data?.habitats || [];
+
+  // Add event listener for habitat selection from the map
+  useEffect(() => {
+    const handleHabitatSelected = (event) => {
+      const { habitat } = event.detail;
+      // Find the matching habitat in our list (in case the data structure is slightly different)
+      const matchingHabitat = habitats.find(h => h._id === habitat._id);
+      if (matchingHabitat) {
+        setSelectedHabitat(matchingHabitat);
+        setCurrentImageIndex(0);
+      } else {
+        // If not found in our current list, use the habitat from the event
+        setSelectedHabitat(habitat);
+        setCurrentImageIndex(0);
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('habitat-selected', handleHabitatSelected);
+    
+    // Cleanup on unmount
+    return () => {
+      document.removeEventListener('habitat-selected', handleHabitatSelected);
+    };
+  }, [habitats]);
 
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -80,7 +105,7 @@ export default function HabitatList() {
   }
 
   return (
-    <div>
+    <div className="relative">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {habitats.map((habitat) => (
           <div 
@@ -113,10 +138,10 @@ export default function HabitatList() {
         ))}
       </div>
 
-      {/* Modal with image slider/carousel */}
+      {/* Modal with image slider/carousel - Higher Z-index */}
       {selectedHabitat && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
             <div className="relative">
               {/* Main image carousel */}
               <div className="relative h-[80vh] w-full">
@@ -124,11 +149,11 @@ export default function HabitatList() {
                   src={selectedHabitat.imageUrl[currentImageIndex]}
                   alt={`${selectedHabitat.habitatName} - Image ${currentImageIndex + 1}`}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   priority
                 />
                 
-                {/* Navigation arrows - now more translucent */}
+                {/* Navigation arrows */}
                 {selectedHabitat.imageUrl.length > 1 && (
                   <>
                     <button 
@@ -191,7 +216,6 @@ export default function HabitatList() {
               )}
             </div>
 
-            {/* Content section */}
           </div>
         </div>
       )}

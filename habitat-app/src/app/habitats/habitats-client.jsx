@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import HabitatUpload from '@/components/habitat/HabitatUpload';
 import HabitatList from '@/components/habitat/HabitatList';
+import HabitatMap from '@/components/habitat/HabitatMap';
 
 export default function HabitatsClient() {
   const { data: session, status } = useSession();
@@ -77,11 +78,18 @@ export default function HabitatsClient() {
           {error}
         </div>
       )}
-
+      
       {loading ? (
         <div className="py-10 text-center">Loading habitats...</div>
       ) : (
-        <HabitatList habitats={habitats} />
+        <div className="space-y-6"> {/* Add spacing between components */}
+        <div className="border rounded-lg">
+          <HabitatMap habitats={habitats} />
+        </div>
+        <div>
+          <HabitatList habitats={habitats} />
+        </div>
+      </div>
       )}
     </div>
   );

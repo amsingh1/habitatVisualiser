@@ -28,7 +28,7 @@ export async function POST(req) {
     console.log("Connected to database");
     
     // Extract data
-    const { habitatName, location, date, notes, imageUrl } = data;
+    const { habitatName, location, date, notes, imageUrl, gpsCoordinate} = data;
     
     // Log session user structure to understand what's available
     console.log("Session user:", session.user);
@@ -37,6 +37,7 @@ export async function POST(req) {
     
     // Prepare data for saving
     const habitatData = {
+      gpsCoordinate,
       habitatName,
       location,
       date: date || new Date(),
