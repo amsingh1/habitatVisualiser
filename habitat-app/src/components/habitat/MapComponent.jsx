@@ -48,6 +48,7 @@ export default function MapComponent({ habitats, mapCenter }) {
       />
       
       {habitats.map((habitat) => (
+         habitat.gpsCoordinate && (
         <Marker 
           key={habitat._id} 
           position={habitat.coordinates}
@@ -87,7 +88,7 @@ export default function MapComponent({ habitats, mapCenter }) {
             </div>
           </Popup>
         </Marker>
-      ))}
+      )) )}
     </MapContainer>
   );
 }
