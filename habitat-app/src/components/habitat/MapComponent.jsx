@@ -88,7 +88,7 @@ export default function MapComponent({ habitats, mapCenter }) {
             </div>
           </Popup>
         </Marker>
-      )) )}
+      )))}
     </MapContainer>
   );
 }
