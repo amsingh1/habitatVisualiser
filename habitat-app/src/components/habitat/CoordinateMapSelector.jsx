@@ -127,8 +127,8 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
     markerRef.current = L.marker(latLng).addTo(mapInstanceRef.current);
   
     // Center and zoom in
-    mapInstanceRef.current.flyTo(latLng, 13); // 🔥 focus with animation and zoom
-  }, [currentCoordinate]);
+    mapInstanceRef.current.setView(latLng, 13);  
+  }, []);
   
 
   return (

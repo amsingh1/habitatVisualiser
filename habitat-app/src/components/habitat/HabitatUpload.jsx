@@ -1,12 +1,20 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { mutate } from 'swr';
 import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
+
+const MapSelector = dynamic(
+  () => import('./CoordinateMapSelector'),
+  { 
+    ssr: false,
+    loading: () => <div className="text-center p-4">Loading map...</div>
+  }
+);
 
 export default function HabitatUpload() {
   const { data: session } = useSession();
@@ -30,14 +38,11 @@ export default function HabitatUpload() {
   const fileInputRef = useRef(null);
 
 
-  const MapSelector = dynamic(
-    () => import('./CoordinateMapSelector'),
-    { 
-      ssr: false,
-      loading: () => <div className="text-center p-4">Loading map...</div>
-    }
-  );
-  
+   // Memoize the MapSelector component to prevent unnecessary re-renders
+/*    const MapSelector = useMemo(() => {
+    return DynamicMapSelector;
+  }, []); 
+   */
   // Search for EU Veg Units as user types
   useEffect(() => {
     const searchEuVegUnits = async () => {
@@ -358,7 +363,6 @@ export default function HabitatUpload() {
               currentCoordinate={coordinate} 
               onSelectCoordinate={(value) => {
                 setCoordinate(value);
-                setShowMap(true);
               }}
             />
           </div>

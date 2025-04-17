@@ -7,12 +7,14 @@ import useSWR from 'swr';
 // Create a fetcher function
 const fetcher = (...args) => fetch(...args).then(res => res.json());
 
-export default function HabitatList() {
+export default function HabitatList({ dataType = 'habitats', userId = null }) {
   const [selectedHabitat, setSelectedHabitat] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
+  const apiEndpoint = dataType === 'personal' 
+  ? `/api/habitats/my` 
+  : '/api/habitats';
   // Use SWR to fetch and keep habitats data up-to-date
-  const { data, error, isLoading } = useSWR('/api/habitats', fetcher);
+  const { data, error, isLoading } = useSWR(apiEndpoint, fetcher);
   
   // Extract habitats from data
   const habitats = data?.habitats || [];
