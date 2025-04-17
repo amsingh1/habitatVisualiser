@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { mutate } from 'swr';
+import dynamic from 'next/dynamic';
+import 'leaflet/dist/leaflet.css';
 
 export default function HabitatUpload() {
   const { data: session } = useSession();
@@ -24,9 +26,17 @@ export default function HabitatUpload() {
   const [success, setSuccess] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]); // Array of selected files
   const [previews, setPreviews] = useState([]); // Array of preview URLs
-  
+  const [showMap, setShowMap] = useState(false);
   const fileInputRef = useRef(null);
 
+
+  const MapSelector = dynamic(
+    () => import('./CoordinateMapSelector'),
+    { 
+      ssr: false,
+      loading: () => <div className="text-center p-4">Loading map...</div>
+    }
+  );
   // Search for habitats as user types
   useEffect(() => {
     const searchHabitats = async () => {
@@ -310,19 +320,44 @@ export default function HabitatUpload() {
         </div>
 
         <div className="mb-4">
-          <label htmlFor="coordinate" className="block text-sm font-medium text-gray-700 mb-1">
-            GPS Coordinate
-          </label>
+        <label htmlFor="coordinate" className="block text-sm font-medium text-gray-700 mb-1">
+          GPS Coordinate
+        </label>
+        <div className="relative">
           <input
             type="text"
             id="coordinate"
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={coordinate}
             onChange={(e) => setCoordinate(e.target.value)}
-            placeholder="Enter GPS coordinate ex. 28.6139,77.2090 "
+            onClick={() => setShowMap(true)}
+            placeholder="Enter GPS coordinate ex. 28.6139,77.2090 or click to select on map"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowMap(!showMap)}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 bg-gray-100 rounded-md hover:bg-gray-200"
+            title={showMap ? "Hide map" : "Show map to select coordinates"}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+          </button>
         </div>
+        
+        {showMap && (
+          <div className="border border-gray-300 rounded-md mt-2 overflow-hidden" style={{ height: '400px' }}>
+            <MapSelector 
+              currentCoordinate={coordinate} 
+              onSelectCoordinate={(value) => {
+                setCoordinate(value);
+                setShowMap(true);
+              }}
+            />
+          </div>
+        )}
+      </div>
         
         <div className="mb-4">
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
