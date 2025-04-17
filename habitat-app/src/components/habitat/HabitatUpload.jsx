@@ -14,7 +14,7 @@ export default function HabitatUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0); // Added for upload progress
   const [error, setError] = useState('');
-  const [habitatSuggestions, setHabitatSuggestions] = useState([]);
+  const [euVegSuggestions, setEuVegSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   // Form state
@@ -37,29 +37,34 @@ export default function HabitatUpload() {
       loading: () => <div className="text-center p-4">Loading map...</div>
     }
   );
-  // Search for habitats as user types
+  
+  // Search for EU Veg Units as user types
   useEffect(() => {
-    const searchHabitats = async () => {
+    const searchEuVegUnits = async () => {
       if (habitatName.trim().length < 2) {
-        setHabitatSuggestions([]);
+        setEuVegSuggestions([]);
         setShowSuggestions(false);
         return;
       }
       
       try {
-        const response = await fetch(`/api/habitats/search?query=${encodeURIComponent(habitatName)}`);
-        const data = await response.json();
+        const response = await fetch(`/api/eu-veg-units/search?query=${encodeURIComponent(habitatName)}`);
         
-        if (response.ok) {
-          setHabitatSuggestions(data.habitats);
-          setShowSuggestions(true);
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
         }
+        
+        const data = await response.json();
+        setEuVegSuggestions(data.units);
+        setShowSuggestions(true);
       } catch (error) {
-        console.error('Error searching habitats:', error);
+        console.error('Error searching EU Veg Units:', error);
+        setEuVegSuggestions([]);
+        setShowSuggestions(false);
       }
     };
     
-    const debounceTimer = setTimeout(searchHabitats, 300);
+    const debounceTimer = setTimeout(searchEuVegUnits, 300);
     return () => clearTimeout(debounceTimer);
   }, [habitatName]);
 
@@ -87,8 +92,8 @@ export default function HabitatUpload() {
     fileInputRef.current.click();
   };
 
-  const selectHabitatSuggestion = (name) => {
-    setHabitatName(name);
+  const selectEuVegSuggestion = (nameWithoutAuthority) => {
+    setHabitatName(nameWithoutAuthority);
     setShowSuggestions(false);
   };
 
@@ -150,7 +155,7 @@ export default function HabitatUpload() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          gpsCoordinate:coordinate,
+          gpsCoordinate: coordinate,
           habitatName,
           location,
           date: date || new Date().toISOString(),
@@ -278,7 +283,7 @@ export default function HabitatUpload() {
         
         <div className="mb-4 relative">
           <label htmlFor="habitatName" className="block text-sm font-medium text-gray-700 mb-1">
-            Habitat Name
+            Name without authority
           </label>
           <input
             type="text"
@@ -286,18 +291,19 @@ export default function HabitatUpload() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={habitatName}
             onChange={(e) => setHabitatName(e.target.value)}
-            placeholder="Search for habitat name..."
+            placeholder="Search for EU vegetation unit..."
             required
           />
-          {showSuggestions && habitatSuggestions.length > 0 && (
+          {showSuggestions && euVegSuggestions.length > 0 && (
             <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-              {habitatSuggestions.map((habitat) => (
+              {euVegSuggestions.map((unit) => (
                 <li
-                  key={habitat._id}
+                  key={unit._id}
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => selectHabitatSuggestion(habitat.habitatName)}
+                  onClick={() => selectEuVegSuggestion(unit.name_without_authority)}
                 >
-                  {habitat.habitatName}
+                  <div className="font-medium">{unit.name_without_authority}</div>
+                  <div className="text-xs text-gray-500">Code: {unit.code} | EVC: {unit.EVC_code}</div>
                 </li>
               ))}
             </ul>
