@@ -83,13 +83,13 @@ export default function MyImagesClient() {
   if (!session) {
     return (
       <div className="py-10 text-center">
-        <p className="text-xl">Please sign in to view your uploaded images</p>
+        <p className="text-xl">Please login to view your uploaded images</p>
         <div className="mt-6">
           <Link
             href="/auth/signin"
             className="px-5 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
-            Sign in
+            Login
           </Link>
         </div>
       </div>

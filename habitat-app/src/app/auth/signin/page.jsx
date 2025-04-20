@@ -1,8 +1,8 @@
 import SignInForm from './signin-form';
 
 export const metadata = {
-  title: 'Sign In',
-  description: 'Sign in to your account',
+  title: 'Login',
+  description: 'Login to your account',
 };
 
 export default function SignInPage() {
@@ -11,7 +11,7 @@ export default function SignInPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+            Login to your account
           </h2>
         </div>
         

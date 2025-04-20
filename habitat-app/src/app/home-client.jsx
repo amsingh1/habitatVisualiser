@@ -13,21 +13,24 @@ export default function HomeClient() {
 
   if (!session) {
     return (
-      <div className="text-center">
-        <p className="text-xl">Sign in to access all features</p>
-        <div className="mt-6 flex justify-center space-x-6">
-          <Link
-            href="/auth/signin"
-            className="px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/auth/signup"
-            className="px-5 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-          >
-            Sign up
-          </Link>
+      <div className="w-full">
+        
+        <div className="text-center">
+          <p className="text-xl">Login to access all features</p>
+          {/* <div className="mt-6 flex justify-center space-x-6">
+            <Link
+              href="/auth/signin"
+              className="px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              Login
+            </Link>
+            <Link
+              href="/auth/signup"
+              className="px-5 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Sign up
+            </Link>
+          </div> */}
         </div>
       </div>
     );

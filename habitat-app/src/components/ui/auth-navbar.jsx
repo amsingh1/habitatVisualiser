@@ -24,10 +24,10 @@ export default function AuthNavBar() {
   return (
     <header className="bg-indigo-600">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-label="Top">
-        <div className="w-full py-6 flex items-center justify-between border-b border-indigo-500 lg:border-none">
+        <div className="w-full py-3 flex items-center justify-between border-b border-indigo-500 lg:border-none">
           {/* Logo */}
           <Link href="/" className="text-white text-xl font-bold">
-            Amazing Habitats
+            Habitats
           </Link>
           
           {/* Mobile Menu Button - for both logged in and logged out states */}
@@ -46,7 +46,7 @@ export default function AuthNavBar() {
             
             {!loading && !session && (
               <>
-                <Link href="/auth/signin" className={linkClasses}>Sign in</Link>
+                <Link href="/auth/signin" className={linkClasses}>Login</Link>
                 <Link href="/auth/signup" className={signOutClasses}>Sign up</Link>
               </>
             )}
@@ -92,7 +92,7 @@ export default function AuthNavBar() {
             
             {!loading && !session && (
               <div className="flex flex-col space-y-2 px-2">
-                <Link href="/auth/signin" className={linkClasses}>Sign in</Link>
+                <Link href="/auth/signin" className={linkClasses}>Login</Link>
                 <Link href="/auth/signup" className={signOutClasses}>Sign up</Link>
               </div>
             )}

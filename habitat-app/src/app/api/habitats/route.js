@@ -68,22 +68,40 @@ export async function POST(req) {
     );
   }
 }
-// Handler for GET requests to fetch all habitat entries
+// Handler for GET requests to fetch habitat entries
 export async function GET(req) {
   try {
     await connectDB();
     
-    // Get current user session
-    const session = await getServerSession(authOptions);
+    // Get the URL from the request
+    const url = new URL(req.url);
     
-    if (!session) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    // Check if this is a request for slider images (public access)
+    const isSliderRequest = url.searchParams.get('slider') === 'true';
+    const limit = parseInt(url.searchParams.get('limit') || '5');
+    
+    // Only check authentication for non-slider requests
+    if (!isSliderRequest) {
+      // Get current user session
+      const session = await getServerSession(authOptions);
+      
+      if (!session) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      }
+      
+      // Fetch all habitat entries for authenticated users
+      const habitats = await Habitat.find().sort({ createdAt: -1 }).lean();
+      return NextResponse.json({ habitats });
+    } else {
+      // For slider requests, return a limited set of images without requiring authentication
+      const sliderImages = await Habitat.find({ imageUrl: { $exists: true, $ne: '' } })
+        .select('imageUrl habitatName location')
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+        
+      return NextResponse.json({ sliderImages });
     }
-    
-    // Fetch all habitat entries
-    const habitats = await Habitat.find().sort({ createdAt: -1 }).lean();
-    
-    return NextResponse.json({ habitats });
   } catch (error) {
     console.error('Error fetching habitats:', error);
     return NextResponse.json(

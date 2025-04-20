@@ -56,7 +56,7 @@ export const authOptions = {
   ],
   callbacks: {
     async jwt({ token, account, user }) {
-      // Initial sign in
+      // Initial Login
       if (account && user) {
         return {
           ...token,

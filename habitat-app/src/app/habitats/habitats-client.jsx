@@ -54,7 +54,7 @@ export default function HabitatsClient() {
   if (!session) {
     return (
       <div className="py-10 text-center">
-        <p className="text-xl">Please sign in to view and upload habitats</p>
+        <p className="text-xl">Please login to view and upload habitats</p>
       </div>
     );
   }
