@@ -16,7 +16,7 @@ const MapSelector = dynamic(
   }
 );
 
-export default function HabitatUpload({ toggleUploadForm }) {
+export default function HabitatUpload() {
   const { data: session } = useSession();
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
@@ -183,7 +183,10 @@ export default function HabitatUpload({ toggleUploadForm }) {
       
       setUploadProgress(100); // Complete progress
       mutate('/api/habitats');
-      toggleUploadForm(); // Close the upload form if it was open
+      // navigate to the habitats page or refresh the current page
+      if (habitatResponse.ok) {
+      router.push('/habitats');
+       }
       // Reset form
       setHabitatName('');
       setLocation('');
@@ -220,7 +223,7 @@ export default function HabitatUpload({ toggleUploadForm }) {
 
   return (
     <div className="bg-white shadow rounded-lg p-6 mb-6">
-      <h2 className="text-2xl font-bold mb-4">Upload Habitat Image</h2>
+      <h2 className="text-2xl font-bold mb-4">Upload New Habitat</h2>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -263,7 +266,6 @@ export default function HabitatUpload({ toggleUploadForm }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 <p className="mt-2">Click to upload habitat images</p>
-                <p className="text-xs text-gray-500 mt-1">Images will be stored in Cloudinary</p>
               </div>
             )}
             <input

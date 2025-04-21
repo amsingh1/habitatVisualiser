@@ -55,6 +55,13 @@ export default function AuthNavBar() {
       
       {!loading && session && (
         <>
+        <Link href="/habitats/upload" className="inline-block">
+          <button
+            className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+          Upload New Habitat
+          </button>
+        </Link>
           {/* Nav Links */}
           {navLinks.map(link => (
             <Link key={link.href} href={link.href} className={`inline-block ${linkClasses}`}>
