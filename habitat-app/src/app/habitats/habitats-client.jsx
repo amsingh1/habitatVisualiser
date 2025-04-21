@@ -75,10 +75,10 @@ export default function HabitatsClient() {
       {!loading && !showUploadForm && (
         <div className="space-y-6">
           <div className="border rounded-lg">
-            <HabitatMap habitats={habitats} />
+            <HabitatMap  />
           </div>
           <div>
-            <HabitatList habitats={habitats} />
+            <HabitatList />
           </div>
         </div>
       )}

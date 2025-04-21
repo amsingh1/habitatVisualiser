@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import useSWR from 'swr';
+import { useSearchParams } from 'next/navigation';
 
 // Fetcher function for SWR
 const fetcher = (...args) => fetch(...args).then(res => res.json());
@@ -18,11 +19,36 @@ const MapWithNoSSR = dynamic(
 );
 
 // This component will display all habitats on a map
-export default function HabitatMap() {
+export default function HabitatMap({ dataType='habitats' }) {
   // Use SWR for data fetching with automatic revalidation
-  const { data, error, isLoading, mutate } = useSWR('/api/habitats', fetcher, {
-    refreshInterval: 5000, // Refresh every 5 seconds (adjust as needed)
-    revalidateOnFocus: true, // Revalidate when window gets focus
+  // Get search parameters from URL
+  const searchParams = useSearchParams();
+  const searchText = searchParams.get('q') || '';
+  const searchField = searchParams.get('field') || 'habitatName'; // Default to habitatName
+  const searchContext = searchParams.get('context') || dataType;
+  
+  // Determine if a search is being performed
+  const isSearching = searchText !== '';
+  
+  // Determine the API endpoint based on dataType and search parameters
+  const getApiEndpoint = () => {
+    // If searching, use search endpoint
+    if (isSearching) {
+      const queryString = new URLSearchParams({
+        q: searchText,
+        field: searchField,
+        context: dataType
+      }).toString();
+      return `/api/habitats/all-search?${queryString}`;
+    } 
+    // Otherwise, use the default endpoint
+    return `/api/habitats`;
+    
+  };
+  
+  // Use SWR to fetch and keep habitats data up-to-date
+ 
+  const { data, error, isLoading, mutate } = useSWR(getApiEndpoint(), fetcher, {
     revalidateOnMount: true, // Revalidate when component mounts
   });
 
@@ -104,7 +130,7 @@ export default function HabitatMap() {
   if (!habitats || habitats.length === 0) return <div className="text-center p-8">No habitats found to display.</div>;
 
   return (
-    <div className="w-full h-[50vh] relative">
+    <div className="w-full h-[60vh] relative">
       <MapWithNoSSR 
         habitats={habitats}
         mapCenter={mapCenter}

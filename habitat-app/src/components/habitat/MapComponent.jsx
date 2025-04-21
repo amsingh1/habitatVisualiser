@@ -58,7 +58,14 @@ export default function MapComponent({ habitats, mapCenter }) {
               className="p-2 cursor-pointer hover:bg-gray-50"
               onClick={() => triggerHabitatSelection(habitat)}
             >
-              <h3 className="font-bold text-lg text-blue-600 hover:underline">{habitat.habitatName}</h3>
+            <h3 
+              className="font-bold text-lg text-blue-600 hover:underline"
+              title={habitat.habitatName} // This adds the tooltip with full name
+            >
+              {habitat.habitatName.length > 30 
+                ? `${habitat.habitatName.substring(0, 20)}...` 
+                : habitat.habitatName}
+            </h3>
               <p>Location: {habitat.location}</p>
               {habitat.gpsCoordinate && <p>Coordinates: {habitat.gpsCoordinate}</p>}
               <p>Date: {new Date(habitat.date).toLocaleDateString()}</p>

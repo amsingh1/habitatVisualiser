@@ -162,6 +162,9 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                 <h3 className="text-lg font-semibold">{habitat.habitatName}</h3>
                 <p className="text-gray-600">{habitat.location}</p>
                 <p className="text-gray-500 text-sm">{formatDate(habitat.date)}</p>
+                {habitat.gpsCoordinate && <p className="text-gray-500 text-sm mt-2">Coordinates: {habitat.gpsCoordinate}</p>}
+                {habitat.userName && <p className="text-gray-500 text-sm mt-2">Added by: {habitat.userName}</p>}
+
               </div>
             </div>
           ))}

@@ -26,7 +26,7 @@ export default function AuthNavBar() {
       <nav className="w-full px-4 sm:px-6 lg:px-8" aria-label="Top">
       <div className="w-full py-3 flex items-center justify-between border-b border-indigo-500 lg:border-none">
   {/* Logo - positioned completely left */}
-  <Link href="/habitats" className="text-white text-xl font-bold">
+  <Link href="/" className="text-white text-xl font-bold">
     Habitats
   </Link>
   
@@ -56,8 +56,9 @@ export default function AuthNavBar() {
       {!loading && session && (
         <>
         <Link href="/habitats/upload" className="inline-block">
+        
           <button
-            className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="px-4 py-2 bg-[#74ac00] text-white rounded-md hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
           Upload New Habitat
           </button>
@@ -154,6 +155,10 @@ export default function AuthNavBar() {
                   <span className="text-white">{session.user.name || session.user.email}</span>
                 </div>
                 
+               <Link href="/habitats/upload" className="block mx-2 bg-[#74ac00] py-2 px-4 border border-transparent rounded-md text-base font-medium text-white hover:bg-opacity-75" >
+                Upload New Habitat
+                
+              </Link>
                 {/* Mobile Nav Links */}
                 {navLinks.map(link => (
                   <Link key={link.href} href={link.href} className={`block mx-2 ${linkClasses}`}>
@@ -162,12 +167,16 @@ export default function AuthNavBar() {
                 ))}
                 
                 {/* Mobile Sign Out Button */}
-                <button 
-                  onClick={() => signOut({ callbackUrl: '/' })} 
-                  className={`block w-full text-left mx-2 ${signOutClasses}`}
+                                <Link 
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    signOut({ callbackUrl: '/' });
+                  }} 
+                  className={`block mx-2 ${signOutClasses}`}
                 >
-                  Sign out
-                </button>
+                  Log out
+                </Link>
               </>
             )}
           </div>
