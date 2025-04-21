@@ -16,7 +16,7 @@ const MapSelector = dynamic(
   }
 );
 
-export default function HabitatUpload() {
+export default function HabitatUpload({ toggleUploadForm }) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
@@ -183,6 +183,7 @@ export default function HabitatUpload() {
       
       setUploadProgress(100); // Complete progress
       mutate('/api/habitats');
+      toggleUploadForm(); // Close the upload form if it was open
       // Reset form
       setHabitatName('');
       setLocation('');

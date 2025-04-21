@@ -71,7 +71,7 @@ export default function HabitatsClient() {
         </button>
       </div>
 
-      {showUploadForm && <HabitatUpload />}
+      {showUploadForm && <HabitatUpload toggleUploadForm = {toggleUploadForm} />}
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
@@ -79,17 +79,19 @@ export default function HabitatsClient() {
         </div>
       )}
       
-      {loading ? (
+      {loading && (
         <div className="py-10 text-center">Loading habitats...</div>
-      ) : (
-        <div className="space-y-6"> {/* Add spacing between components */}
-        <div className="border rounded-lg">
-          <HabitatMap habitats={habitats} />
+      )}
+
+      {!loading && !showUploadForm && (
+        <div className="space-y-6">
+          <div className="border rounded-lg">
+            <HabitatMap habitats={habitats} />
+          </div>
+          <div>
+            <HabitatList habitats={habitats} />
+          </div>
         </div>
-        <div>
-          <HabitatList habitats={habitats} />
-        </div>
-      </div>
       )}
     </div>
   );
