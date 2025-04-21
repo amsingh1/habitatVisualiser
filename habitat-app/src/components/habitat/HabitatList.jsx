@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import useSWR from 'swr';
+import { useSearchParams } from 'next/navigation';
 
 // Create a fetcher function
 const fetcher = (...args) => fetch(...args).then(res => res.json());
@@ -10,11 +11,36 @@ const fetcher = (...args) => fetch(...args).then(res => res.json());
 export default function HabitatList({ dataType = 'habitats', userId = null }) {
   const [selectedHabitat, setSelectedHabitat] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const apiEndpoint = dataType === 'personal' 
-  ? `/api/habitats/my` 
-  : '/api/habitats';
+  
+  // Get search parameters from URL
+  const searchParams = useSearchParams();
+  const searchText = searchParams.get('q') || '';
+  const searchField = searchParams.get('field') || 'habitatName'; // Default to habitatName
+  const searchContext = searchParams.get('context') || dataType;
+  
+  // Determine if a search is being performed
+  const isSearching = searchText !== '';
+  
+  // Determine the API endpoint based on dataType and search parameters
+  const getApiEndpoint = () => {
+    // If searching, use search endpoint
+    if (isSearching) {
+      const queryString = new URLSearchParams({
+        q: searchText,
+        field: searchField,
+        context: dataType
+      }).toString();
+      return `/api/habitats/all-search?${queryString}`;
+    }
+    
+    // Otherwise use standard endpoints
+    return dataType === 'personal' 
+      ? `/api/habitats/my` 
+      : '/api/habitats';
+  };
+  
   // Use SWR to fetch and keep habitats data up-to-date
-  const { data, error, isLoading } = useSWR(apiEndpoint, fetcher);
+  const { data, error, isLoading } = useSWR(getApiEndpoint(), fetcher);
   
   // Extract habitats from data
   const habitats = data?.habitats || [];
@@ -79,69 +105,71 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
     setCurrentImageIndex(index);
   };
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="text-center py-10 bg-gray-50 rounded-lg">
-        <p className="text-gray-500">Loading habitats...</p>
-      </div>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <div className="text-center py-10 bg-red-50 rounded-lg">
-        <p className="text-red-500">Error loading habitats. Please try again.</p>
-      </div>
-    );
-  }
-
-  // Show empty state
-  if (habitats.length === 0) {
-    return (
-      <div className="text-center py-10 bg-gray-50 rounded-lg">
-        <p className="text-gray-500">No habitat entries found. Upload your first one!</p>
-      </div>
-    );
-  }
-
   return (
     <div className="relative">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {habitats.map((habitat) => (
-          <div 
-            key={habitat._id}
-            onClick={() => openDetails(habitat)}
-            className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300"
-          >
-            {/* Show just the first image prominent in the card */}
-            <div className="relative h-48 w-full overflow-hidden">
-              {habitat.imageUrl.length > 0 && (
-                <Image
-                  src={habitat.imageUrl[0]}
-                  alt={`${habitat.habitatName}`}
-                  fill
-                  className="object-cover hover:scale-105 transition-transform duration-300"
-                />
-              )}
-              {habitat.imageUrl.length > 1 && (
-                <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-full text-xs">
-                  +{habitat.imageUrl.length - 1} more
-                </div>
-              )}
+      {/* Note: SearchHabitatComponent is now separate and not included here */}
+      
+      {/* Loading state */}
+      {isLoading && (
+        <div className="text-center py-10 bg-gray-50 rounded-lg">
+          <p className="text-gray-500">Loading habitats...</p>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <div className="text-center py-10 bg-red-50 rounded-lg">
+          <p className="text-red-500">Error loading habitats. Please try again.</p>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && !error && habitats.length === 0 && (
+        <div className="text-center py-10 bg-gray-50 rounded-lg">
+          {isSearching 
+            ? <p className="text-gray-500">No habitats found matching your search.</p>
+            : <p className="text-gray-500">No habitat entries found. Upload your first one!</p>
+          }
+        </div>
+      )}
+
+      {/* Habitat grid */}
+      {!isLoading && !error && habitats.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {habitats.map((habitat) => (
+            <div 
+              key={habitat._id}
+              onClick={() => openDetails(habitat)}
+              className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300"
+            >
+              {/* Show just the first image prominent in the card */}
+              <div className="relative h-48 w-full overflow-hidden">
+                {habitat.imageUrl && habitat.imageUrl.length > 0 && (
+                  <Image
+                    src={habitat.imageUrl[0]}
+                    alt={`${habitat.habitatName}`}
+                    fill
+                    className="object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                )}
+                {habitat.imageUrl && habitat.imageUrl.length > 1 && (
+                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-full text-xs">
+                    +{habitat.imageUrl.length - 1} more
+                  </div>
+                )}
+              </div>
+              <div className="p-4">
+                <h3 className="text-lg font-semibold">{habitat.habitatName}</h3>
+                <p className="text-gray-600">{habitat.location}</p>
+                <p className="text-gray-500 text-sm">{formatDate(habitat.date)}</p>
+              </div>
             </div>
-            <div className="p-4">
-              <h3 className="text-lg font-semibold">{habitat.habitatName}</h3>
-              <p className="text-gray-600">{habitat.location}</p>
-              <p className="text-gray-500 text-sm">{formatDate(habitat.date)}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Modal with image slider/carousel - Higher Z-index */}
-      {selectedHabitat && (
+      {selectedHabitat && selectedHabitat.imageUrl && selectedHabitat.imageUrl.length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
             <div className="relative">
@@ -217,7 +245,6 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                 </div>
               )}
             </div>
-
           </div>
         </div>
       )}

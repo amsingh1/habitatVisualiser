@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import HabitatList from '@/components/habitat/HabitatList';
 import Link from 'next/link';
-
+import SearchHabitatComponent from '@/components/SearchHabitatComponent';
 export default function MyImagesClient() {
   const { data: session, status } = useSession();
   const [habitats, setHabitats] = useState([]);

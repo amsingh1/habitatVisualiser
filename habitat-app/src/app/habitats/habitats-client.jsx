@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import HabitatUpload from '@/components/habitat/HabitatUpload';
 import HabitatList from '@/components/habitat/HabitatList';
 import HabitatMap from '@/components/habitat/HabitatMap';
+import SearchHabitatComponent from '@/components/SearchHabitatComponent';
 
 export default function HabitatsClient() {
   const { data: session, status } = useSession();
@@ -62,7 +63,7 @@ export default function HabitatsClient() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Your Habitat Entries</h2>
+        <SearchHabitatComponent context="habitats" />
         <button
           onClick={toggleUploadForm}
           className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
