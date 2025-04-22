@@ -10,7 +10,10 @@ export async function middleware(req) {
   const { pathname } = req.nextUrl;
 
   // Protected routes - redirect to login if not authenticated
-  if (pathname.startsWith('/protected') && !token) {
+  if ((pathname.startsWith('/protected') || 
+       pathname.startsWith('/habitats/upload') || 
+       pathname.startsWith('/my-images') || 
+       pathname.startsWith('/habitats')) && !token) {
     return NextResponse.redirect(new URL('/auth/signin', req.url));
   }
 
@@ -23,5 +26,14 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ['/protected/:path*', '/auth/signin', '/auth/signup'],
+  matcher: [
+    '/protected/:path*', 
+    '/habitats', 
+    '/habitats/:path*',
+    '/habitats/upload',
+    '/my-images', 
+    '/my-images/:path*',
+    '/auth/signin', 
+    '/auth/signup'
+  ],
 };
