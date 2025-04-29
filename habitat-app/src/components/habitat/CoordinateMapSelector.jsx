@@ -59,9 +59,37 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
         markerRef.current = L.marker(parts).addTo(map);
       }
     }
+     // Function to get only state and country from coordinates
+    const getLocationName = async (lat, lng) => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+        );
+        const data = await response.json();
+        
+        if (data.address) {
+          // Extract just the state/region and country
+          const state = data.address.state || data.address.region || '';
+          const country = data.address.country || '';
+          
+          if (state && country) {
+            return `${state}, ${country}`;
+          } else if (state) {
+            return state;
+          } else if (country) {
+            return country;
+          }
+        }
+        
+        return 'Unknown location';
+      } catch (error) {
+        console.error('Error fetching location name:', error);
+        return 'Unknown location';
+      }
+    };
 
     // Handle click to set new coordinate
-    map.on('click', (e) => {
+    map.on('click', async (e) => {
       isSelectingRef.current = true;
       const { lat, lng } = e.latlng;
       const formattedLat = parseFloat(lat.toFixed(6));
@@ -75,10 +103,14 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
       // Add new marker
       markerRef.current = L.marker([formattedLat, formattedLng]).addTo(map);
 
+      // Get location name
+     const locationName = await getLocationName(formattedLat, formattedLng);
+
       // Notify parent
-      if (onSelectCoordinate) {
-        onSelectCoordinate(`${formattedLat},${formattedLng}`);
-      }
+        // Notify parent with both coordinate and location
+  if (onSelectCoordinate) {
+    onSelectCoordinate(`${formattedLat},${formattedLng}`, locationName);
+  }
 
       // Clear the selection flag
       setTimeout(() => {

@@ -319,21 +319,6 @@ export default function HabitatUpload() {
         </div>
         
         <div className="mb-4">
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-            Location
-          </label>
-          <input
-            type="text"
-            id="location"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="Enter location"
-            required
-          />
-        </div>
-
-        <div className="mb-4">
         <label htmlFor="coordinate" className="block text-sm font-medium text-gray-700 mb-1">
           GPS Coordinate
         </label>
@@ -364,13 +349,29 @@ export default function HabitatUpload() {
           <div className="border border-gray-300 rounded-md mt-2 overflow-hidden" style={{ height: '400px' }}>
             <MapSelector 
               currentCoordinate={coordinate} 
-              onSelectCoordinate={(value) => {
+              onSelectCoordinate={(value, locationName) => {
                 setCoordinate(value);
+                setLocation(locationName); 
               }}
             />
           </div>
         )}
       </div>
+      
+      <div className="mb-4">
+          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+            Location
+          </label>
+          <input
+            type="text"
+            id="location"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Enter location"
+            required
+          />
+        </div>
         
         <div className="mb-4">
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">

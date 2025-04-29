@@ -3,15 +3,19 @@
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation'; // Import to track current path
 
 export default function AuthNavBar() {
   const { data: session, status } = useSession();
   const loading = status === 'loading';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const pathname = usePathname(); // Get current path
+  
   // Shared link styling
   const linkClasses = "bg-indigo-500 py-2 px-4 border border-transparent rounded-md text-base font-medium text-white hover:bg-opacity-75";
+  const activeLinkClasses = "bg-indigo-700 py-2 px-4 border border-transparent rounded-md text-base font-medium text-white"; // Style for active link
   const signOutClasses = "bg-white py-2 px-4 border border-transparent rounded-md text-base font-medium text-indigo-600 hover:bg-indigo-50";
 
   // Navigation links for logged-in users
@@ -20,6 +24,24 @@ export default function AuthNavBar() {
     { href: "/habitats", label: "Explore" },
     { href: "/my-images", label: "My Observations" }
   ];
+
+  // Get the style for a nav link based on whether it's active
+  const getLinkStyle = (href) => {
+    if (href === '/habitats') {
+      // Special case for /habitats to prevent highlighting on /habitats/upload
+      const isActive = pathname === '/habitats' || 
+                    (pathname.startsWith('/habitats/') && 
+                      !pathname.startsWith('/habitats/upload'));
+      return isActive ? activeLinkClasses : linkClasses;
+    } else if (href === '/my-images') {
+      // Exact match for my-images
+      const isActive = pathname === '/my-images' || pathname.startsWith('/my-images/');
+      return isActive ? activeLinkClasses : linkClasses;
+    } else {
+      // For other links, exact match only
+      return pathname === href ? activeLinkClasses : linkClasses;
+    }
+  };
 
   return (
     <header className="bg-indigo-600">
@@ -48,24 +70,26 @@ export default function AuthNavBar() {
       
       {!loading && !session && (
         <>
-          <Link href="/auth/signin" className={linkClasses}>Login</Link>
-          <Link href="/auth/signup" className={signOutClasses}>Sign up</Link>
+          <Link href="/auth/signin" className={getLinkStyle('/auth/signin')}>Login</Link>
+          <Link href="/auth/signup" className={pathname === '/auth/signup' ? "bg-indigo-100 py-2 px-4 border border-transparent rounded-md text-base font-medium text-indigo-700" : signOutClasses}>Sign up</Link>
         </>
       )}
       
       {!loading && session && (
         <>
         <Link href="/habitats/upload" className="inline-block">
-        
           <button
-            className="px-4 py-2 bg-[#74ac00] text-white rounded-md hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className={pathname === '/habitats/upload' ? 
+              "px-4 py-2 bg-[#5e8a00] text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" :
+              "px-4 py-2 bg-[#74ac00] text-white rounded-md hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            }
           >
           Upload New Habitat
           </button>
         </Link>
           {/* Nav Links */}
           {navLinks.map(link => (
-            <Link key={link.href} href={link.href} className={`inline-block ${linkClasses}`}>
+            <Link key={link.href} href={link.href} className={`inline-block ${getLinkStyle(link.href)}`}>
               {link.label}
             </Link>
           ))}
@@ -132,8 +156,8 @@ export default function AuthNavBar() {
             
             {!loading && !session && (
               <div className="flex flex-col space-y-2 px-2">
-                <Link href="/auth/signin" className={linkClasses}>Login</Link>
-                <Link href="/auth/signup" className={signOutClasses}>Sign up</Link>
+                <Link href="/auth/signin" className={getLinkStyle('/auth/signin')}>Login</Link>
+                <Link href="/auth/signup" className={pathname === '/auth/signup' ? "bg-indigo-100 py-2 px-4 border border-transparent rounded-md text-base font-medium text-indigo-700" : signOutClasses}>Sign up</Link>
               </div>
             )}
             
@@ -155,19 +179,21 @@ export default function AuthNavBar() {
                   <span className="text-white">{session.user.name || session.user.email}</span>
                 </div>
                 
-               <Link href="/habitats/upload" className="block mx-2 bg-[#74ac00] py-2 px-4 border border-transparent rounded-md text-base font-medium text-white hover:bg-opacity-75" >
+               <Link href="/habitats/upload" className={pathname === '/habitats/upload' ? 
+                 "block mx-2 bg-[#5e8a00] py-2 px-4 border border-transparent rounded-md text-base font-medium text-white" :
+                 "block mx-2 bg-[#74ac00] py-2 px-4 border border-transparent rounded-md text-base font-medium text-white hover:bg-opacity-75"} >
                 Upload New Habitat
                 
               </Link>
                 {/* Mobile Nav Links */}
                 {navLinks.map(link => (
-                  <Link key={link.href} href={link.href} className={`block mx-2 ${linkClasses}`}>
+                  <Link key={link.href} href={link.href} className={`block mx-2 ${getLinkStyle(link.href)}`}>
                     {link.label}
                   </Link>
                 ))}
                 
                 {/* Mobile Sign Out Button */}
-                                <Link 
+                <Link 
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
