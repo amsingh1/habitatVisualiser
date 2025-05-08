@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import useSWR from 'swr';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 // Create a fetcher function
 const fetcher = (...args) => fetch(...args).then(res => res.json());
 
 export default function HabitatList({ dataType = 'habitats', userId = null }) {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [selectedHabitat, setSelectedHabitat] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
@@ -135,41 +138,76 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
 
       {/* Habitat grid */}
       {!isLoading && !error && habitats.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {habitats.map((habitat) => (
-            <div 
-              key={habitat._id}
-              onClick={() => openDetails(habitat)}
-              className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300"
-            >
-              {/* Show just the first image prominent in the card */}
-              <div className="relative h-48 w-full overflow-hidden">
-                {habitat.imageUrl && habitat.imageUrl.length > 0 && (
-                  <Image
-                    src={habitat.imageUrl[0]}
-                    alt={`${habitat.habitatName}`}
-                    fill
-                    className="object-cover hover:scale-105 transition-transform duration-300"
-                  />
-                )}
-                {habitat.imageUrl && habitat.imageUrl.length > 1 && (
-                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-full text-xs">
-                    +{habitat.imageUrl.length - 1} more
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <h3 className="text-lg font-semibold">{habitat.habitatName}</h3>
-                <p className="text-gray-600">{habitat.location}</p>
-                <p className="text-gray-500 text-sm">{formatDate(habitat.date)}</p>
-                {habitat.gpsCoordinate && <p className="text-gray-500 text-sm mt-2">Coordinates: {habitat.gpsCoordinate}</p>}
-                {habitat.userName && <p className="text-gray-500 text-sm mt-2">Added by: {habitat.userName}</p>}
-
-              </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {habitats.map((habitat) => (
+      <div
+        key={habitat._id}
+        className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 flex flex-col"
+      >
+        {/* Show just the first image prominent in the card */}
+        <div 
+          className="relative h-48 w-full overflow-hidden"
+          onClick={() => openDetails(habitat)}
+        >
+          {habitat.imageUrl && habitat.imageUrl.length > 0 && (
+            <Image
+              src={habitat.imageUrl[0]}
+              alt={`${habitat.habitatName}`}
+              fill
+              className="object-cover hover:scale-105 transition-transform duration-300"
+            />
+          )}
+          
+          {/* Image count badge */}
+          {habitat.imageUrl && habitat.imageUrl.length > 1 && (
+            <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-full text-xs">
+              +{habitat.imageUrl.length - 1} more
             </div>
-          ))}
+          )}
         </div>
-      )}
+        
+        {/* Habitat info */}
+        <div className="p-4 flex flex-col flex-grow">
+          <div>
+            <h3 className="text-lg font-semibold">{habitat.habitatName}</h3>
+            <p className="text-gray-600">{habitat.location}</p>
+            <p className="text-gray-500 text-sm">{formatDate(habitat.date)}</p>
+            {habitat.gpsCoordinate && <p className="text-gray-500 text-sm mt-2">Coordinates: {habitat.gpsCoordinate}</p>}
+            {habitat.userName && <p className="text-gray-500 text-sm mt-2">Added by: {habitat.userName}</p>}
+          </div>
+          
+          {/* Action buttons - always at the bottom of the card */}
+          <div className="mt-auto pt-3 flex justify-end">
+            {/* Only show edit button for habitats created by the current user */}
+            {session && session.user && habitat.userEmail === session.user.email && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent opening the modal
+                  router.push(`/habitats/upload?id=${habitat._id}`);
+                }}
+                className="text-xs text-gray-700 bg-transparent hover:bg-indigo-100 px-3 py-1.5 rounded-md flex items-center transition-colors"
+                title="Edit habitat"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-3.5 w-3.5 mr-1.5"
+                >
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
 
       {/* Modal with image slider/carousel - Higher Z-index */}
       {selectedHabitat && selectedHabitat.imageUrl && selectedHabitat.imageUrl.length > 0 && (
