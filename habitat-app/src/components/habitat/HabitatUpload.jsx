@@ -27,6 +27,7 @@ export default function HabitatUpload() {
   const [error, setError] = useState('');
   const [euVegSuggestions, setEuVegSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   
   // Form state
   const [habitatName, setHabitatName] = useState('');
@@ -118,7 +119,7 @@ export default function HabitatUpload() {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
   
-    setSelectedFiles(files);
+    setSelectedFiles(prevFiles => [...prevFiles, ...files]);
   
     // Generate previews for all selected files
     const previewPromises = files.map((file) => {
@@ -130,7 +131,51 @@ export default function HabitatUpload() {
     });
   
     Promise.all(previewPromises).then((previewUrls) => {
-      setPreviews(previewUrls);
+        setPreviews(prevPreviews => [...prevPreviews, ...previewUrls]);
+    });
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+    if (files.length === 0) return;
+    
+    setSelectedFiles(prevFiles => [...prevFiles, ...files]);
+    
+    // Generate previews for dropped files
+    const previewPromises = files.map((file) => {
+      const reader = new FileReader();
+      return new Promise((resolve) => {
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    });
+    
+    Promise.all(previewPromises).then((previewUrls) => {
+      setPreviews(prevPreviews => [...prevPreviews, ...previewUrls]);
     });
   };
 
@@ -310,7 +355,11 @@ export default function HabitatUpload() {
         <div className="mb-4">
           <div 
             onClick={triggerFileInput}
-            className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50"
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed ${isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'} rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors duration-200 relative`}
           >
             {/* Show existing images if editing */}
             {isEditing && existingImages && existingImages.length > 0 && (
@@ -376,8 +425,25 @@ export default function HabitatUpload() {
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                <p className="mt-2">Click to upload habitat images</p>
+                <p className="mt-2">Click to upload habitat images or drag and drop files here</p>
               </div>
+            ) }
+            
+            {/* Always visible add more button when there are already images */}
+            {((previews && previews.length > 0) || (existingImages && existingImages.length > 0)) && (
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  triggerFileInput();
+                }}
+                className="mt-4 flex items-center justify-center w-full py-2 bg-indigo-50 hover:bg-indigo-100 border border-dashed border-indigo-300 rounded text-indigo-600 transition-all duration-200"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Images
+              </button>
             )}
             
             <input
@@ -387,6 +453,10 @@ export default function HabitatUpload() {
               accept="image/*"
               multiple
               className="hidden"
+              onClick={(e) => {
+                // This prevents the file input from capturing click events from elements below it
+                e.stopPropagation();
+              }}
             />
           </div>
         </div>
