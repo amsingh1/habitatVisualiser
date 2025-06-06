@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { mutate } from 'swr';
 import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
+import exifr from 'exifr'; // Import exifr for EXIF data extraction
 
 const MapSelector = dynamic(
   () => import('./CoordinateMapSelector'),
@@ -28,6 +29,9 @@ export default function HabitatUpload() {
   const [euVegSuggestions, setEuVegSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [exifData, setExifData] = useState(null);
+  const [useExifData, setUseExifData] = useState(true);
+  const [isLoadingExif, setIsLoadingExif] = useState(false);
   
   // Form state
   const [habitatName, setHabitatName] = useState('');
@@ -84,6 +88,105 @@ export default function HabitatUpload() {
       fetchHabitatData();
     }
   }, [habitatId, session, router]);
+   // Extract EXIF data when selectedFiles array changes or useExifData toggle changes
+  useEffect(() => {
+    // Create a flag to track if we should process EXIF data
+    // This helps prevent unnecessary processing
+    const shouldProcessExif = useExifData && selectedFiles.length > 0;
+    
+    const extractExifData = async () => {
+      // Handle clearing fields when useExifData is toggled off
+      if (!useExifData) {
+        // If we're not using EXIF data, clear the fields that might have been populated by EXIF
+        if (exifData) {
+          // Clear coordinate if it was set from EXIF data
+          if (exifData.latitude && exifData.longitude) {
+            setCoordinate('');
+          }
+          
+          // Clear date if it was set from EXIF data
+          if (exifData.DateTimeOriginal) {
+            setDate('');
+          }
+        }
+        return;
+      }
+
+      // Only proceed if there are files and shouldProcessExif flag is true
+      if (!shouldProcessExif) return;
+      
+      // Show the loading indicator
+      setIsLoadingExif(true);
+      
+      try {
+        let foundUsefulExif = false;
+        let extractedData = null;
+        
+        // Try each file until we find one with the data we need
+        for (const file of selectedFiles) {
+          // Extract GPS and DateTime information
+          const data = await exifr.parse(file, {
+            gps: true,
+            exif: true,
+          });
+          
+          if (data) {
+            // Check if this file has the important EXIF data we need
+            const hasCoordinates = data.latitude && data.longitude;
+            const hasDate = data.DateTimeOriginal;
+            
+            // If this file has coordinates or date, use it
+            if (hasCoordinates || hasDate) {
+              extractedData = data;
+              foundUsefulExif = true;
+              console.log('Found image with useful EXIF data:', data);
+              break; // Stop searching once we find a good one
+            } else {
+              console.log('Image has EXIF data but missing important fields');
+            }
+          }
+        }
+        
+        // If we found useful EXIF data, update the UI
+        if (foundUsefulExif && extractedData) {
+          // Populate GPS coordinates if available
+          if (extractedData.latitude && extractedData.longitude) {
+            const coordString = `${extractedData.latitude},${extractedData.longitude}`;
+            setCoordinate(coordString);
+          }
+            
+          // Populate date if available
+          if (extractedData.DateTimeOriginal) {
+            try {
+              const exifDate = new Date(extractedData.DateTimeOriginal);
+              // Make sure the date is valid before using it
+              if (!isNaN(exifDate.getTime())) {
+                setDate(exifDate.toISOString().split('T')[0]);
+              } else {
+                console.warn('Could not parse EXIF date:', extractedData.DateTimeOriginal);
+              }
+            } catch (err) {
+              console.error('Error parsing EXIF date:', err);
+            }
+          }
+          
+          // Set the EXIF data after handling the form fields
+          // to prevent triggering the useEffect again
+          setExifData(extractedData);
+        } else {
+          console.log('No images with useful EXIF data found');
+        }
+      } catch (error) {
+        console.error('Error extracting EXIF data:', error);
+        // Don't set error state to avoid UI disruption
+      } finally {
+        // Hide the loading indicator
+        setIsLoadingExif(false);
+      }
+    };
+    
+    extractExifData();
+  }, [selectedFiles, useExifData]); // Removed exifData from dependencies
 
   // Search for EU Veg Units as user types
   useEffect(() => {
@@ -114,13 +217,15 @@ export default function HabitatUpload() {
     const debounceTimer = setTimeout(searchEuVegUnits, 300);
     return () => clearTimeout(debounceTimer);
   }, [habitatName]);
-
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
   
-    setSelectedFiles(prevFiles => [...prevFiles, ...files]);
-  
+    // Clear existing EXIF data if we have any to allow the useEffect to find new EXIF data
+    if (exifData) {
+      setExifData(null);
+    }
+    
     // Generate previews for all selected files
     const previewPromises = files.map((file) => {
       const reader = new FileReader();
@@ -130,8 +235,11 @@ export default function HabitatUpload() {
       });
     });
   
+    // Update state only once to minimize renders
     Promise.all(previewPromises).then((previewUrls) => {
-        setPreviews(prevPreviews => [...prevPreviews, ...previewUrls]);
+      // Update both state variables at once to batch the renders
+      setSelectedFiles(prevFiles => [...prevFiles, ...files]);
+      setPreviews(prevPreviews => [...prevPreviews, ...previewUrls]);
     });
   };
 
@@ -153,9 +261,7 @@ export default function HabitatUpload() {
     if (!isDragging) {
       setIsDragging(true);
     }
-  };
-
-  const handleDrop = (e) => {
+  };  const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
@@ -163,7 +269,10 @@ export default function HabitatUpload() {
     const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
     if (files.length === 0) return;
     
-    setSelectedFiles(prevFiles => [...prevFiles, ...files]);
+    // Clear existing EXIF data if we have any to allow the useEffect to find new EXIF data
+    if (exifData) {
+      setExifData(null);
+    }
     
     // Generate previews for dropped files
     const previewPromises = files.map((file) => {
@@ -174,9 +283,14 @@ export default function HabitatUpload() {
       });
     });
     
+    // Update state only once to minimize renders
     Promise.all(previewPromises).then((previewUrls) => {
+      // Update both state variables at once to batch the renders
+      setSelectedFiles(prevFiles => [...prevFiles, ...files]);
       setPreviews(prevPreviews => [...prevPreviews, ...previewUrls]);
     });
+    
+    // EXIF data extraction is now handled by the useEffect hook that watches selectedFiles
   };
 
   const triggerFileInput = () => {
@@ -195,6 +309,26 @@ export default function HabitatUpload() {
     updatedFiles.splice(index, 1);
     updatedPreviews.splice(index, 1);
   
+    // If no images remain, clear the EXIF data and form fields
+    if (updatedFiles.length === 0) {
+      // If useExifData is true and we have EXIF data, clear the coordinate and date fields
+      if (useExifData && exifData) {
+        if (exifData.latitude && exifData.longitude) {
+          setCoordinate('');
+        }
+        if (exifData.DateTimeOriginal) {
+          setDate('');
+        }
+      }
+      // Clear EXIF data last to avoid triggering unnecessary re-renders
+      setExifData(null);
+    } else if (exifData) {
+      // If EXIF data exists and we still have files, clear it to allow a rescan
+      // The useEffect will automatically run again due to selectedFiles changing
+      setExifData(null);
+    }
+    
+    // Always update the files/previews state last to ensure only one re-render
     setSelectedFiles(updatedFiles);
     setPreviews(updatedPreviews);
   };
@@ -525,7 +659,55 @@ export default function HabitatUpload() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
             </button>
-          </div>
+          </div>          {/* EXIF Data Info */}
+          {isLoadingExif && (
+            <div className="mt-2 text-sm">
+              <div className="flex items-center text-indigo-600">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Extracting EXIF data from photos...
+              </div>
+            </div>
+          )}
+          
+          {exifData && !isLoadingExif && (
+            <div className="mt-2 text-sm">
+              <div className="flex items-center mb-2">
+                <input
+                  type="checkbox"
+                  id="useExifData"
+                  checked={useExifData}
+                  onChange={() => {
+                    // Simply toggle the useExifData value
+                    // The useEffect hook will handle the form field updates
+                    setUseExifData(!useExifData);
+                  }}
+                  className="mr-2"
+                />
+                <label htmlFor="useExifData" className="text-indigo-600 font-medium">
+                  Use EXIF data from photos
+                </label>
+              </div>
+              {exifData && useExifData && (
+                <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                  <p className="font-medium text-blue-800 mb-1">Photo EXIF Data Found:</p>
+                  <ul className="list-disc list-inside text-blue-700 space-y-1">
+                    {exifData.latitude && exifData.longitude && (
+                      <li>GPS: {exifData.latitude.toFixed(6)}, {exifData.longitude.toFixed(6)}</li>
+                    )}
+                    {exifData.DateTimeOriginal && (
+                      <li>Date Taken: {new Date(exifData.DateTimeOriginal).toLocaleDateString()}</li>
+                    )}
+                    {exifData.Make && exifData.Model && (
+                      <li>Camera: {exifData.Make} {exifData.Model}</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
           
           {showMap && (
             <div className="border border-gray-300 rounded-md mt-2 overflow-hidden" style={{ height: '400px' }}>
