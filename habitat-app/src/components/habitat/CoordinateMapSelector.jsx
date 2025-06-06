@@ -63,13 +63,13 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
     const getLocationName = async (lat, lng) => {
       try {
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=en`
         );
         const data = await response.json();
         
         if (data.address) {
           // Extract just the state/region and country
-          const state = data.address.state || data.address.region || '';
+          const state =   data.address.village || data.address.municipality || data.address.county  || data.address.state || '';
           const country = data.address.country || '';
           
           if (state && country) {
