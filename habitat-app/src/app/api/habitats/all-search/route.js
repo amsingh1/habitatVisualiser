@@ -40,9 +40,9 @@ export async function GET(req) {
     
     // If search text is provided, add text search condition
     if (searchText.trim()) {
-      // Create search condition for the selected field
+      // Create search condition for the selected field - using exact match (case insensitive)
       const fieldCondition = {
-        [searchField]: { $regex: searchText, $options: 'i' }
+        [searchField]: { $regex: `^${searchText}$`, $options: 'i' }
       };
       
       // If we already have user filters, combine with $and

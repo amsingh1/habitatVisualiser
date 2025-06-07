@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function SearchHabitatComponent({ context = 'habitats' }) {
@@ -25,6 +25,11 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   // State for search text and selected field
   const [searchText, setSearchText] = useState(currentSearchText);
   const [selectedField, setSelectedField] = useState(currentField);
+  const [suggestions, setSuggestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
   
   // Initialize selected field from URL or localStorage
   useEffect(() => {
@@ -41,21 +46,101 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     }
   }, []);
   
+  // Function to fetch autocomplete suggestions
+  const fetchSuggestions = async (text) => {
+    if (!text || text.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      // Build query params for autocomplete API
+      const params = new URLSearchParams();
+      params.set('q', text);
+      params.set('field', selectedField);
+      if (context !== 'habitats') {
+        params.set('context', context);
+      }
+      
+      const response = await fetch(`/api/habitats/autocomplete?${params.toString()}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.suggestions || []);
+      } else {
+        console.error('Error fetching suggestions');
+        setSuggestions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add click outside handler
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        searchInputRef.current && 
+        !searchInputRef.current.contains(event.target) &&
+        suggestionsRef.current && 
+        !suggestionsRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Debounce function for search input
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (searchText) {
+        fetchSuggestions(searchText);
+      }
+    }, 300);
+    
+    return () => {
+      clearTimeout(debounceTimer);
+    };
+  }, [searchText, selectedField, context]);
+  
   // Handle changes to the search input
   const handleSearchChange = (e) => {
-    setSearchText(e.target.value);
+    const value = e.target.value;
+    setSearchText(value);
+    setShowSuggestions(true);
     
     // If search is cleared, reset the URL
-    if (e.target.value === '') {
+    if (value === '') {
+      setSuggestions([]);
       updateSearchUrl('', selectedField);
     }
+  };
+  
+  // Handle suggestion selection
+  const handleSuggestionClick = (suggestion) => {
+    setSearchText(suggestion);
+    setShowSuggestions(false);
+    // Update URL and trigger search
+    updateSearchUrl(suggestion, selectedField);
   };
   
   // Handle field selection change
   const handleFieldChange = (e) => {
     const newField = e.target.value;
     setSelectedField(newField);
+    setSuggestions([]);
     localStorage.setItem(`${context}_searchField`, newField);
+    // Reset search text when field changes
+    setSearchText('');
   };
   
   // Update URL with search parameters
@@ -117,9 +202,10 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
           </div>
           
           {/* Search input and button */}
-          <div className="flex w-full sm:w-2/3">
+          <div className="flex w-full sm:w-2/3 relative">
             <div className="flex flex-1 h-10 rounded-lg overflow-hidden border border-gray-200">
               <input
+                ref={searchInputRef}
                 type="text"
                 value={searchText}
                 onChange={handleSearchChange}
@@ -137,6 +223,33 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                 </svg>
               </button>
             </div>
+            
+            {/* Suggestions dropdown */}
+            {showSuggestions && searchText.length >= 2 && (
+              <div 
+                ref={suggestionsRef}
+                className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+              style={{ zIndex: 9999 }}
+              >
+                {isLoading ? (
+                  <div className="px-4 py-2 text-gray-500">Loading suggestions...</div>
+                ) : suggestions.length > 0 ? (
+                  <ul>
+                    {suggestions.map((suggestion, index) => (
+                      <li 
+                        key={index}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                      >
+                        {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="px-4 py-2 text-gray-500">No suggestions found</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </form>
