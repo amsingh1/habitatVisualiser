@@ -19,7 +19,14 @@ export async function GET(req) {
     
     // Get search parameters from URL
     const { searchParams } = new URL(req.url);
-    const searchText = searchParams.get('q') || '';
+    const rawSearchText = searchParams.get('q') || '';
+    const searchText = rawSearchText.trim();
+    
+    // Return empty results if search text is empty or only contains whitespace
+    if (!searchText || searchText.length < 2) {
+      return NextResponse.json({ suggestions: [] });
+    }
+
     const searchField = searchParams.get('field') || 'habitatName'; // Default to habitatName
     const context = searchParams.get('context') || 'habitats';
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -39,10 +46,48 @@ export async function GET(req) {
         searchQuery.userEmail = userEmail;
       }
     }
-      // If search text is provided, add text search condition
+
+    // Special handling for 'group' field type
+    if (searchField === 'group' && searchText.trim()) {
+      // First, find habitats matching the habitat name
+      const matchingHabitats = await Habitat.find({
+        habitatName: { $regex: `^${searchText}`, $options: 'i' }
+      }).select('EVC_code').lean();
+
+      // Extract unique first 3 characters of EVC codes
+      const evcCodePrefixes = [...new Set(
+        matchingHabitats
+          .map(h => h.EVC_code)
+          .filter(code => code && code.length > 1)
+          .map(code => code.substring(0, 3))
+      )];
+
+      // If we found any matching EVC code prefixes
+      if (evcCodePrefixes.length > 0) {
+        // Find all habitats with matching EVC code prefixes
+        const habitatsWithMatchingEVC = await Habitat.find({
+          EVC_code: {
+            $in: evcCodePrefixes.map(prefix => new RegExp(`^${prefix}`))
+          }
+        })
+        .select('habitatName EVC_code')  // Only select the fields we need
+        .limit(limit)
+        .lean();
+      
+        return NextResponse.json({
+          suggestions: habitatsWithMatchingEVC.map(h => ({
+            habitatName: h.habitatName,
+            EVC_code: h.EVC_code
+          }))
+        });
+      }
+      
+      return NextResponse.json({ suggestions: [] });
+    }
+
+    // Regular search for other fields
     if (searchText.trim()) {
       // Create search condition for the selected field using regex for starts with
-      // This is better for autocomplete as it only shows values starting with the search text
       const fieldCondition = {
         [searchField]: { $regex: `^${searchText}`, $options: 'i' }
       };
@@ -62,7 +107,7 @@ export async function GET(req) {
     }
       // Get distinct values for the search field
     const distinctValues = await Habitat.distinct(searchField, searchQuery);
-    
+
     // Manually limit the results since .limit() can't be used with .distinct()
     const limitedValues = distinctValues.slice(0, limit);
     

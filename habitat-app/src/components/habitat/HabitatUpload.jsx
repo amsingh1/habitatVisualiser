@@ -35,6 +35,8 @@ export default function HabitatUpload() {
   
   // Form state
   const [habitatName, setHabitatName] = useState('');
+  const [code, setCode] = useState('');
+  const [evcCode, setEvcCode] = useState('');
   const [location, setLocation] = useState('');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -297,8 +299,10 @@ export default function HabitatUpload() {
     fileInputRef.current.click();
   };
 
-  const selectEuVegSuggestion = (nameWithoutAuthority) => {
+  const selectEuVegSuggestion = (nameWithoutAuthority, code, evc_code) => {
     setHabitatName(nameWithoutAuthority);
+    setCode(code);
+    setEvcCode(evc_code);
     setShowSuggestions(false);
   };
 
@@ -412,6 +416,8 @@ export default function HabitatUpload() {
         date: date || new Date().toISOString(),
         notes,
         imageUrl: updatedImageUrls,
+        code: code || '',
+        evcCode: evcCode || '',
       };
       
       // If editing, add the habitat ID
@@ -624,7 +630,7 @@ export default function HabitatUpload() {
                 <li
                   key={unit._id}
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => selectEuVegSuggestion(unit.name_without_authority)}
+                  onClick={() => selectEuVegSuggestion(unit.name_without_authority, unit.code, unit.EVC_code)}
                 >
                   <div className="font-medium">{unit.name_without_authority}</div>
                   <div className="text-xs text-gray-500">Code: {unit.code} | EVC: {unit.EVC_code}</div>

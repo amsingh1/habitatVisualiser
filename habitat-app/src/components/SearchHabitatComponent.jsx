@@ -17,6 +17,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     { id: 'location', label: 'Location', enabledIn: ['habitats', 'personal'] },
     { id: 'userName', label: 'User Name', enabledIn: ['habitats', 'personal'] },
     { id: 'userEmail', label: 'Email', enabledIn: ['habitats', 'personal'] },
+    { id: 'group', label: 'Group', enabledIn: ['habitats', 'personal'] },
   ];
   
   // Determine which fields to show based on context
@@ -238,10 +239,29 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                     {suggestions.map((suggestion, index) => (
                       <li 
                         key={index}
-                        onClick={() => handleSuggestionClick(suggestion)}
+                        onClick={() => handleSuggestionClick(
+                          typeof suggestion === 'string' ? suggestion : suggestion.habitatName
+                        )}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
                       >
-                        {suggestion}
+                        {typeof suggestion === 'string' ? (
+                          // For regular fields (location, userName, etc.)
+                          <span className="font-medium">
+                            {suggestion.length > 40 ? `${suggestion.substring(0, 40)}...` : suggestion}
+                          </span>
+                        ) : (
+                          // For group/habitatName fields with EVC_code
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {suggestion.habitatName.length > 40 
+                                ? `${suggestion.habitatName.substring(0, 40)}...` 
+                                : suggestion.habitatName}
+                            </span>
+                            {suggestion.EVC_code && (
+                              <span className="text-sm text-gray-500">Code: {suggestion.EVC_code}</span>
+                            )}
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>

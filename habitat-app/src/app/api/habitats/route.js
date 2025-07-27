@@ -28,7 +28,8 @@ export async function POST(req) {
     console.log("Connected to database");
     
     // Extract data
-    const { habitatName, location, date, notes, imageUrl, gpsCoordinate} = data;
+    const { habitatName, location, date, notes, imageUrl, gpsCoordinate, code, 
+            evcCode} = data;
     
     // Log session user structure to understand what's available
     console.log("Session user:", session.user);
@@ -45,7 +46,10 @@ export async function POST(req) {
       imageUrl,
       user: session.user.id, // Add this line to include the user ID
       userName: session.user.name || 'Unknown',
-      userEmail: session.user.email
+      userEmail: session.user.email,
+      code: code || '',
+      EVC_code: evcCode || '',
+
     };
     
     console.log("Habitat data to save:", habitatData);

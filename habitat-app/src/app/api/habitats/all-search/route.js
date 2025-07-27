@@ -18,10 +18,13 @@ export async function GET(req) {
     
     // Get search parameters from URL
     const { searchParams } = new URL(req.url);
-    const searchText = searchParams.get('q') || '';
-    const searchField = searchParams.get('field') || 'habitatName'; // Default to habitatName
+    const searchText = searchParams.get('q')?.trim() || '';
+    let searchField = searchParams.get('field') || 'habitatName'; // Default to habitatName
     const context = searchParams.get('context') || 'habitats';
     
+       if (searchField === 'group') {
+      searchField = 'habitatName'; // Default to habitatName for group
+      }
     // Identify the user
     const userId = session.user.id;
     const userEmail = session.user.email;

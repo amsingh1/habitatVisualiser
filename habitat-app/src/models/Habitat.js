@@ -37,7 +37,15 @@ const HabitatSchema = new mongoose.Schema(
     userEmail: {
       type: String,
       required: true,
-    }
+    },
+    code: {
+      type: String,
+      default: '',
+    },
+    EVC_code: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );
