@@ -49,7 +49,7 @@ export default function AuthNavBar() {
       <div className="w-full py-3 flex items-center justify-between border-b border-indigo-500 lg:border-none">
   {/* Logo - positioned completely left */}
   <Link href="/" className="text-white text-xl font-bold">
-    Habitats
+    Vegetation types
   </Link>
   
   {/* Right side container for all other elements */}
@@ -77,15 +77,8 @@ export default function AuthNavBar() {
       
       {!loading && session && (
         <>
-        <Link href="/habitats/upload" className="inline-block">
-          <button
-            className={pathname === '/habitats/upload' ? 
-              "px-4 py-2 bg-[#5e8a00] text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" :
-              "px-4 py-2 bg-[#74ac00] text-white rounded-md hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            }
-          >
-          Upload New Habitat
-          </button>
+        <Link href="/habitats/upload" className={pathname === '/habitats/upload' ? activeLinkClasses : linkClasses}>
+          Upload New Vegetation type
         </Link>
           {/* Nav Links */}
           {navLinks.map(link => (
@@ -179,11 +172,8 @@ export default function AuthNavBar() {
                   <span className="text-white">{session.user.name || session.user.email}</span>
                 </div>
                 
-               <Link href="/habitats/upload" className={pathname === '/habitats/upload' ? 
-                 "block mx-2 bg-[#5e8a00] py-2 px-4 border border-transparent rounded-md text-base font-medium text-white" :
-                 "block mx-2 bg-[#74ac00] py-2 px-4 border border-transparent rounded-md text-base font-medium text-white hover:bg-opacity-75"} >
-                Upload New Habitat
-                
+               <Link href="/habitats/upload" className={`block mx-2 ${pathname === '/habitats/upload' ? activeLinkClasses : linkClasses}`}>
+                Upload New Vegetation type
               </Link>
                 {/* Mobile Nav Links */}
                 {navLinks.map(link => (

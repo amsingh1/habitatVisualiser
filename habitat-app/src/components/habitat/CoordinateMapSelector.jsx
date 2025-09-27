@@ -25,7 +25,7 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
     });
 
     // Set initial center
-    let initialCenter = [28.6139, 77.2090]; // Default (Delhi, India)
+    let initialCenter = [50.0755, 14.4378]; // Default (Prague - Central Europe)
     try {
       if (currentCoordinate) {
         const parts = currentCoordinate.split(',').map(n => parseFloat(n.trim()));

@@ -28,7 +28,7 @@ export async function POST(req) {
     console.log("Connected to database");
     
     // Extract data
-    const { habitatName, location, date, notes, imageUrl, gpsCoordinate, code, 
+    const { habitatName, location, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate, code, 
             evcCode} = data;
     
     // Log session user structure to understand what's available
@@ -43,6 +43,9 @@ export async function POST(req) {
       location,
       date: date || new Date(),
       notes,
+      dominantSpecies1,
+      dominantSpecies2,
+      dominantSpecies3,
       imageUrl,
       user: session.user.id, // Add this line to include the user ID
       userName: session.user.name || 'Unknown',
@@ -165,7 +168,7 @@ export async function PUT(req) {
     console.log("Connected to database");
     
     // Extract habitat ID and updated data
-    const { habitatId, habitatName, location, date, notes, imageUrl, gpsCoordinate } = data;
+    const { habitatId, habitatName, location, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate } = data;
     
     if (!habitatId) {
       return NextResponse.json(
@@ -198,6 +201,9 @@ export async function PUT(req) {
       location: location !== undefined ? location : existingHabitat.location,
       date: date !== undefined ? date : existingHabitat.date,
       notes: notes !== undefined ? notes : existingHabitat.notes,
+      dominantSpecies1: dominantSpecies1 !== undefined ? dominantSpecies1 : existingHabitat.dominantSpecies1,
+      dominantSpecies2: dominantSpecies2 !== undefined ? dominantSpecies2 : existingHabitat.dominantSpecies2,
+      dominantSpecies3: dominantSpecies3 !== undefined ? dominantSpecies3 : existingHabitat.dominantSpecies3,
       imageUrl: imageUrl !== undefined ? imageUrl : existingHabitat.imageUrl,
       gpsCoordinate: gpsCoordinate !== undefined ? gpsCoordinate : existingHabitat.gpsCoordinate,
       // We don't update user-related fields as they should remain the same

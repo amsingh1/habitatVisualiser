@@ -2,8 +2,8 @@ import LayoutWrapper from '@/components/layout-wrapper';
 import HabitatsClient from './habitats-client';
 
 export const metadata = {
-  title: 'Habitats',
-  description: 'View and upload habitat images',
+  title: 'Vegetation types',
+  description: 'View and upload vegetation type images',
 };
 
 export default function HabitatsPage() {

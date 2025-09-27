@@ -3,7 +3,7 @@ import MyImagesClient from './my-images-client';
 import SearchHabitatComponent from '@/components/SearchHabitatComponent';
 export const metadata = {
   title: 'My Images',
-  description: 'View your uploaded habitat images',
+  description: 'View your uploaded vegetation type images',
 };
 
 export default function MyImagesPage() {

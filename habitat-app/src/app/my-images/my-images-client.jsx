@@ -29,11 +29,11 @@ export default function MyImagesClient() {
         if (response.ok) {
           setHabitats(data.habitats || []);
         } else {
-          throw new Error(data.message || 'Failed to fetch your habitats');
+          throw new Error(data.message || 'Failed to fetch your vegetation types');
         }
       } catch (error) {
         console.error('Error fetching user habitats:', error);
-        setError(error.message || 'An error occurred while fetching your habitats');
+        setError(error.message || 'An error occurred while fetching your vegetation types');
       } finally {
         setLoading(false);
       }
@@ -68,7 +68,7 @@ export default function MyImagesClient() {
             <h2 className="text-xl font-semibold">{session.user.name || 'User'}</h2>
             <p className="text-gray-600">{session.user.email}</p>
             <p className="text-gray-500 mt-1">
-              {habitats.length} {habitats.length === 1 ? 'habitat' : 'habitats'} uploaded
+              {habitats.length} {habitats.length === 1 ? 'vegetation type' : 'vegetation types'} uploaded
             </p>
           </div>
         </div>

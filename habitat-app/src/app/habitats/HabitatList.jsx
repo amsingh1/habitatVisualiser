@@ -22,7 +22,7 @@ export default function HabitatList({ habitats }) {
   if (habitats.length === 0) {
     return (
       <div className="text-center py-10 bg-gray-50 rounded-lg">
-        <p className="text-gray-500">No habitat entries found. Upload your first one!</p>
+        <p className="text-gray-500">No vegetation type entries found. Upload your first one!</p>
       </div>
     );
   }
@@ -53,7 +53,7 @@ export default function HabitatList({ habitats }) {
         ))}
       </div>
 
-      {/* Modal for habitat details */}
+      {/* Modal for vegetation type details */}
       {selectedHabitat && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">

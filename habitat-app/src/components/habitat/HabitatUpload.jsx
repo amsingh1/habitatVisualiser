@@ -40,6 +40,9 @@ export default function HabitatUpload() {
   const [location, setLocation] = useState('');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [dominantSpecies1, setDominantSpecies1] = useState('');
+  const [dominantSpecies2, setDominantSpecies2] = useState('');
+  const [dominantSpecies3, setDominantSpecies3] = useState('');
   const [coordinate, setCoordinate] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -64,7 +67,7 @@ export default function HabitatUpload() {
         
         // Check if the current user is the owner of this habitat
         if (session && habitat.userEmail !== session.user.email) {
-          setError('You do not have permission to edit this habitat');
+          setError('You do not have permission to edit this vegetation type');
           setTimeout(() => router.push('/habitats'), 2000);
           return;
         }
@@ -74,6 +77,9 @@ export default function HabitatUpload() {
         setLocation(habitat.location || '');
         setDate(habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : '');
         setNotes(habitat.notes || '');
+        setDominantSpecies1(habitat.dominantSpecies1 || '');
+        setDominantSpecies2(habitat.dominantSpecies2 || '');
+        setDominantSpecies3(habitat.dominantSpecies3 || '');
         setCoordinate(habitat.gpsCoordinate || '');
         
         // Set existing images
@@ -82,7 +88,7 @@ export default function HabitatUpload() {
         }
       } catch (error) {
         console.error('Error fetching habitat data:', error);
-        setError('Failed to load habitat data. Please try again.');
+        setError('Failed to load vegetation type data. Please try again.');
       }
     };
     
@@ -359,12 +365,12 @@ export default function HabitatUpload() {
     
     // Validation for edits - must have at least one image (either existing or new)
     if (isEditing && existingImages.length === 0 && (!selectedFiles || selectedFiles.length === 0)) {
-      setError('Your habitat must have at least one image');
+      setError('Your vegetation type must have at least one image');
       return;
     }
     
     if (!habitatName || !location) {
-      setError('Habitat name and location are required');
+      setError('Vegetation type name and location are required');
       return;
     }
     
@@ -415,6 +421,9 @@ export default function HabitatUpload() {
         location,
         date: date || new Date().toISOString(),
         notes,
+        dominantSpecies1,
+        dominantSpecies2,
+        dominantSpecies3,
         imageUrl: updatedImageUrls,
         code: code || '',
         evcCode: evcCode || '',
@@ -455,12 +464,15 @@ export default function HabitatUpload() {
       setLocation('');
       setDate('');
       setNotes('');
+      setDominantSpecies1('');
+      setDominantSpecies2('');
+      setDominantSpecies3('');
       setSelectedFiles([]);
       setCoordinate('');
       setPreviews([]);
       setExistingImages([]);
       
-      setSuccess(isEditing ? 'Habitat updated successfully!' : 'Habitat uploaded successfully!');
+      setSuccess(isEditing ? 'Vegetation type updated successfully!' : 'Vegetation type uploaded successfully!');
       setTimeout(() => {
         setSuccess('');
         router.push('/habitats');
@@ -477,7 +489,7 @@ export default function HabitatUpload() {
 
   return (
     <div className="bg-white shadow rounded-lg p-6 mb-6">
-      <h2 className="text-2xl font-bold mb-4">{isEditing ? 'Edit Habitat' : 'Upload New Habitat'}</h2>
+      <h2 className="text-2xl font-bold mb-4">{isEditing ? 'Edit Vegetation type' : 'Upload New Vegetation type'}</h2>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -565,7 +577,7 @@ export default function HabitatUpload() {
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                <p className="mt-2">Click to upload habitat images or drag and drop files here</p>
+                <p className="mt-2">Click to upload vegetation type images or drag and drop files here</p>
               </div>
             ) }
             
@@ -770,6 +782,48 @@ export default function HabitatUpload() {
           ></textarea>
         </div>
         
+        <div className="mb-4">
+          <label htmlFor="dominantSpecies1" className="block text-sm font-medium text-gray-700 mb-1">
+            Dominant species 1
+          </label>
+          <input
+            type="text"
+            id="dominantSpecies1"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={dominantSpecies1}
+            onChange={(e) => setDominantSpecies1(e.target.value)}
+            placeholder="Enter dominant species 1"
+          />
+        </div>
+        
+        <div className="mb-4">
+          <label htmlFor="dominantSpecies2" className="block text-sm font-medium text-gray-700 mb-1">
+            Dominant species 2
+          </label>
+          <input
+            type="text"
+            id="dominantSpecies2"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={dominantSpecies2}
+            onChange={(e) => setDominantSpecies2(e.target.value)}
+            placeholder="Enter dominant species 2"
+          />
+        </div>
+        
+        <div className="mb-4">
+          <label htmlFor="dominantSpecies3" className="block text-sm font-medium text-gray-700 mb-1">
+            Dominant species 3
+          </label>
+          <input
+            type="text"
+            id="dominantSpecies3"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={dominantSpecies3}
+            onChange={(e) => setDominantSpecies3(e.target.value)}
+            placeholder="Enter dominant species 3"
+          />
+        </div>
+        
         <div className="flex justify-end">
           <button
             type="button"
@@ -783,7 +837,7 @@ export default function HabitatUpload() {
             disabled={isUploading}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
           >
-            {isUploading ? 'Saving...' : isEditing ? 'Update Habitat' : 'Upload Habitat'}
+            {isUploading ? 'Saving...' : isEditing ? 'Update Vegetation type' : 'Upload Vegetation type'}
           </button>
         </div>
       </form>

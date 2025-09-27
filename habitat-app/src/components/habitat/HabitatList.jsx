@@ -130,8 +130,8 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
       {!isLoading && !error && habitats.length === 0 && (
         <div className="text-center py-10 bg-gray-50 rounded-lg">
           {isSearching 
-            ? <p className="text-gray-500">No habitats found matching your search.</p>
-            : <p className="text-gray-500">No habitat entries found. Upload your first one!</p>
+            ? <p className="text-gray-500">No vegetation types found matching your search.</p>
+            : <p className="text-gray-500">No vegetation type entries found. Upload your first one!</p>
           }
         </div>
       )}
@@ -186,7 +186,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                   router.push(`/habitats/upload?id=${habitat._id}`);
                 }}
                 className="text-xs text-gray-700 bg-transparent hover:bg-indigo-100 px-3 py-1.5 rounded-md flex items-center transition-colors"
-                title="Edit habitat"
+                title="Edit vegetation type"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

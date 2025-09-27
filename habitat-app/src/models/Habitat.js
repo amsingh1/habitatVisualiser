@@ -22,6 +22,15 @@ const HabitatSchema = new mongoose.Schema(
     notes: {
       type: String,
     },
+    dominantSpecies1: {
+      type: String,
+    },
+    dominantSpecies2: {
+      type: String,
+    },
+    dominantSpecies3: {
+      type: String,
+    },
     imageUrl: {
       type: [String],
       required: [true, 'Image URL is required'],

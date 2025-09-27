@@ -14,7 +14,7 @@ const MapWithNoSSR = dynamic(
   () => import('./MapComponent'),
   {
     ssr: false,
-    loading: () => <div className="text-center p-8">Loading habitat map...</div>
+    loading: () => <div className="text-center p-8">Loading vegetation type map...</div>
   }
 );
 
@@ -121,13 +121,13 @@ export default function HabitatMap({ dataType='habitats' }) {
   }, [habitats]);
 
   // Show loading state
-  if (isLoading) return <div className="text-center p-8">Loading habitat map...</div>;
+  if (isLoading) return <div className="text-center p-8">Loading vegetation type map...</div>;
   
   // Show error state
   if (error) return <div className="text-center p-8 text-red-500">Error: {error.message}</div>;
   
   // Show empty state
-  if (!habitats || habitats.length === 0) return <div className="text-center p-8">No habitats found to display.</div>;
+  if (!habitats || habitats.length === 0) return <div className="text-center p-8">No vegetation types found to display.</div>;
 
   return (
     <div className="w-full h-[60vh] relative">

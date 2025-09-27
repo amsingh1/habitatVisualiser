@@ -38,11 +38,11 @@ export default function ImageSlider() {
         >
           <img 
             src={image.imageUrl[0]} // Assuming imageUrl is an array and we want the first one 
-            alt={image.habitatName || 'Habitat image'} 
+            alt={image.habitatName || 'Vegetation type image'} 
             className="w-full h-full object-cover"
           />
           <div className="absolute bottom-0 left-0 w-full bg-black bg-opacity-50 text-white p-2">
-            <h3 className="text-lg font-semibold">{image.habitatName || 'Beautiful habitat'}</h3>
+            <h3 className="text-lg font-semibold">{image.habitatName || 'Beautiful vegetation type'}</h3>
             {image.location && <p className="text-sm">{image.location}</p>}
           </div>
         </div>
