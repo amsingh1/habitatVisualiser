@@ -633,7 +633,7 @@ export default function HabitatUpload() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={habitatName}
             onChange={(e) => setHabitatName(e.target.value)}
-            placeholder="Search for EU vegetation unit..."
+            placeholder="Search for an EuroVegChecklist vegetation type..."
             required
           />
           {showSuggestions && euVegSuggestions.length > 0 && (

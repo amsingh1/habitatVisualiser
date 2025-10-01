@@ -5,6 +5,7 @@ import Image from 'next/image';
 import useSWR from 'swr';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import DownloadModal from './DownloadModal';
 
 // Create a fetcher function
 const fetcher = (...args) => fetch(...args).then(res => res.json());
@@ -14,6 +15,9 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
   const router = useRouter();
   const [selectedHabitat, setSelectedHabitat] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedHabitats, setSelectedHabitats] = useState([]);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   
   // Get search parameters from URL
   const searchParams = useSearchParams();
@@ -108,9 +112,104 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
     setCurrentImageIndex(index);
   };
 
+  // Selection and download functions
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedHabitats([]);
+  };
+
+  const toggleHabitatSelection = (habitat) => {
+    setSelectedHabitats(prev => {
+      const isSelected = prev.some(h => h._id === habitat._id);
+      if (isSelected) {
+        return prev.filter(h => h._id !== habitat._id);
+      } else {
+        return [...prev, habitat];
+      }
+    });
+  };
+
+  const selectAllHabitats = () => {
+    setSelectedHabitats(habitats);
+  };
+
+  const clearSelection = () => {
+    setSelectedHabitats([]);
+  };
+
+  const handleDownload = () => {
+    if (selectedHabitats.length === 0) {
+      alert('Please select at least one habitat to download.');
+      return;
+    }
+    setShowDownloadModal(true);
+  };
+
+  const handleDownloadComplete = (downloadInfo) => {
+    console.log('Download completed:', downloadInfo);
+    // You can add success notification here
+    setIsSelectionMode(false);
+    setSelectedHabitats([]);
+  };
+
   return (
     <div className="relative">
       {/* Note: SearchHabitatComponent is now separate and not included here */}
+      
+      {/* Download Toolbar */}
+      {session && habitats.length > 0 && (
+        <div className="mb-4 bg-white border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={toggleSelectionMode}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isSelectionMode
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {isSelectionMode ? 'Exit Selection' : 'Select for Download'}
+              </button>
+              
+              {isSelectionMode && (
+                <>
+                  <span className="text-sm text-gray-600">
+                    {selectedHabitats.length} of {habitats.length} selected
+                  </span>
+                  
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={selectAllHabitats}
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={clearSelection}
+                      className="text-sm text-gray-600 hover:text-gray-800"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {isSelectionMode && selectedHabitats.length > 0 && (
+              <button
+                onClick={handleDownload}
+                className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download ({selectedHabitats.length})
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       
       {/* Loading state */}
       {isLoading && (
@@ -147,7 +246,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
         {/* Show just the first image prominent in the card */}
         <div 
           className="relative h-48 w-full overflow-hidden"
-          onClick={() => openDetails(habitat)}
+          onClick={() => isSelectionMode ? toggleHabitatSelection(habitat) : openDetails(habitat)}
         >
           {habitat.imageUrl && habitat.imageUrl.length > 0 && (
             <Image
@@ -156,6 +255,19 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
               fill
               className="object-cover hover:scale-105 transition-transform duration-300"
             />
+          )}
+          
+          {/* Selection checkbox - only show in selection mode */}
+          {isSelectionMode && (
+            <div className="absolute top-2 left-2">
+              <input
+                type="checkbox"
+                checked={selectedHabitats.some(h => h._id === habitat._id)}
+                onChange={() => toggleHabitatSelection(habitat)}
+                className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
           )}
           
           {/* Image count badge */}
@@ -289,6 +401,14 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
           </div>
         </div>
       )}
+
+      {/* Download Modal */}
+      <DownloadModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+        selectedHabitats={selectedHabitats}
+        onDownload={handleDownloadComplete}
+      />
     </div>
   );
 }

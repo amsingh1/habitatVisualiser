@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "archiver": "^7.0.1",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.6.0",
     "exifr": "^7.1.3",
