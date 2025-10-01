@@ -6,6 +6,7 @@ import useSWR from 'swr';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import DownloadModal from './DownloadModal';
+import ConfirmationModal from '../ui/ConfirmationModal';
 
 // Create a fetcher function
 const fetcher = (...args) => fetch(...args).then(res => res.json());
@@ -18,6 +19,9 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
   const [selectedHabitats, setSelectedHabitats] = useState([]);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [habitatToDelete, setHabitatToDelete] = useState(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   
   // Get search parameters from URL
   const searchParams = useSearchParams();
@@ -47,7 +51,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
   };
   
   // Use SWR to fetch and keep habitats data up-to-date
-  const { data, error, isLoading } = useSWR(getApiEndpoint(), fetcher);
+  const { data, error, isLoading, mutate } = useSWR(getApiEndpoint(), fetcher);
   
   // Extract habitats from data
   const habitats = data?.habitats || [];
@@ -150,6 +154,58 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
     // You can add success notification here
     setIsSelectionMode(false);
     setSelectedHabitats([]);
+  };
+
+  const handleDeleteHabitat = (habitat) => {
+    setHabitatToDelete(habitat);
+    setShowDeleteConfirmation(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!habitatToDelete) return;
+
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(`/api/habitats?id=${habitatToDelete._id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to delete habitat');
+      }
+
+      // Success - trigger a re-fetch of the data
+      mutate();
+      
+      // Close the detail modal if the deleted habitat was being viewed
+      if (selectedHabitat && selectedHabitat._id === habitatToDelete._id) {
+        setSelectedHabitat(null);
+      }
+
+      // Close confirmation modal
+      setShowDeleteConfirmation(false);
+      setHabitatToDelete(null);
+
+      console.log('Habitat deleted successfully');
+    } catch (error) {
+      console.error('Error deleting habitat:', error);
+      // You could show an error modal here instead of alert
+      alert(`Failed to delete habitat: ${error.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirmation(false);
+    setHabitatToDelete(null);
   };
 
   return (
@@ -289,30 +345,65 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
           </div>
           
           {/* Action buttons - always at the bottom of the card */}
-          <div className="mt-auto pt-3 flex justify-end">
-            {/* Only show edit button for habitats created by the current user */}
+          <div className="mt-auto pt-3 flex justify-end gap-2">
+            {/* Only show edit and delete buttons for habitats created by the current user */}
             {session && session.user && habitat.userEmail === session.user.email && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent opening the modal
-                  router.push(`/habitats/upload?id=${habitat._id}`);
-                }}
-                className="text-xs text-gray-700 bg-transparent hover:bg-indigo-100 px-3 py-1.5 rounded-md flex items-center transition-colors"
-                title="Edit vegetation type"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-3.5 w-3.5 mr-1.5"
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent opening the modal
+                    router.push(`/habitats/upload?id=${habitat._id}`);
+                  }}
+                  className="text-xs text-gray-700 bg-transparent hover:bg-indigo-100 px-3 py-1.5 rounded-md flex items-center transition-colors"
+                  title="Edit vegetation type"
                 >
-                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                </svg>
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-3.5 w-3.5 mr-1.5"
+                  >
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                  </svg>
+                </button>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent opening the modal
+                    handleDeleteHabitat(habitat);
+                  }}
+                  disabled={isDeleting && habitatToDelete && habitatToDelete._id === habitat._id}
+                  className="text-xs text-red-600 bg-transparent hover:bg-red-100 px-3 py-1.5 rounded-md flex items-center transition-colors disabled:opacity-50"
+                  title="Delete vegetation type"
+                >
+                  {isDeleting && habitatToDelete && habitatToDelete._id === habitat._id ? (
+                    <svg className="animate-spin h-3.5 w-3.5 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="m12 4 2.5 2.5L12 9V4z"></path>
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-3.5 w-3.5 mr-1.5"
+                    >
+                      <polyline points="3,6 5,6 21,6"></polyline>
+                      <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                  )}
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -363,6 +454,46 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                   {currentImageIndex + 1} / {selectedHabitat.imageUrl.length}
                 </div>
                 
+                {/* Action buttons for owner */}
+                {session && session.user && selectedHabitat.userEmail === session.user.email && (
+                  <div className="absolute top-4 left-4 flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeDetails();
+                        router.push(`/habitats/upload?id=${selectedHabitat._id}`);
+                      }}
+                      className="bg-black bg-opacity-30 text-white p-1.5 rounded-full hover:bg-opacity-50 transition-opacity"
+                      title="Edit vegetation type"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                      </svg>
+                    </button>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteHabitat(selectedHabitat);
+                      }}
+                      disabled={isDeleting && habitatToDelete && habitatToDelete._id === selectedHabitat._id}
+                      className="bg-black bg-opacity-30 text-white p-1.5 rounded-full hover:bg-opacity-50 transition-opacity disabled:opacity-50"
+                      title="Delete vegetation type"
+                    >
+                      {isDeleting && habitatToDelete && habitatToDelete._id === selectedHabitat._id ? (
+                        <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="m12 4 2.5 2.5L12 9V4z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                )}
+                
                 {/* Close button - more subtle */}
                 <button
                   onClick={(e) => { e.stopPropagation(); closeDetails(); }}
@@ -408,6 +539,21 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
         onClose={() => setShowDownloadModal(false)}
         selectedHabitats={selectedHabitats}
         onDownload={handleDownloadComplete}
+      />
+      
+      <ConfirmationModal
+        isOpen={showDeleteConfirmation}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title="Delete Vegetation Type"
+        message={habitatToDelete ? (
+          <>
+            Are you sure you want to delete <strong>"{habitatToDelete.habitatName}"</strong>? This action cannot be undone and will permanently remove all associated images and data.
+          </>
+        ) : ''}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isDeleting}
       />
     </div>
   );

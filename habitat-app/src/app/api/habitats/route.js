@@ -144,6 +144,82 @@ export async function GET(req) {
 }
 
 
+// Handler for DELETE requests to delete an existing habitat entry
+export async function DELETE(req) {
+  try {
+    console.log("DELETE API endpoint called");
+    
+    // Get search parameters from URL
+    const { searchParams } = new URL(req.url);
+    const habitatId = searchParams.get('id');
+    
+    if (!habitatId) {
+      return NextResponse.json(
+        { success: false, message: 'Habitat ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Get current user session
+    console.log("Getting session...");
+    const session = await getServerSession(authOptions);
+    console.log("Session:", session);
+    
+    if (!session) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // Connect to database
+    console.log("Connecting to database...");
+    await connectDB();
+    console.log("Connected to database");
+    
+    // Find the habitat to delete
+    const existingHabitat = await Habitat.findById(habitatId);
+    
+    if (!existingHabitat) {
+      return NextResponse.json(
+        { success: false, message: 'Habitat not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Check if the user is authorized to delete this habitat
+    // First check by user ID, then fall back to email if user ID is not available
+    let isAuthorized = false;
+    
+    if (session.user.id && existingHabitat.user) {
+      isAuthorized = existingHabitat.user.toString() === session.user.id;
+    } else if (session.user.email && existingHabitat.userEmail) {
+      isAuthorized = existingHabitat.userEmail === session.user.email;
+    }
+    
+    if (!isAuthorized) {
+      return NextResponse.json(
+        { success: false, message: 'Not authorized to delete this habitat' },
+        { status: 403 }
+      );
+    }
+    
+    // Delete the habitat
+    console.log("Deleting habitat entry...");
+    await Habitat.findByIdAndDelete(habitatId);
+    console.log("Habitat deleted successfully");
+    
+    return NextResponse.json(
+      { success: true, message: 'Habitat deleted successfully' },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error in DELETE API route:", error);
+    console.error("Error stack:", error.stack);
+    return NextResponse.json(
+      { success: false, message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 // Handler for PUT requests to update an existing habitat entry
 export async function PUT(req) {
   try {

@@ -87,9 +87,9 @@ export async function GET(req) {
 
     // Regular search for other fields
     if (searchText.trim()) {
-      // Create search condition for the selected field using regex for starts with
+      // Create search condition for the selected field using regex for contains
       const fieldCondition = {
-        [searchField]: { $regex: `^${searchText}`, $options: 'i' }
+        [searchField]: { $regex: `${searchText}`, $options: 'i' }
       };
       
       // If we already have user filters, combine with $and
