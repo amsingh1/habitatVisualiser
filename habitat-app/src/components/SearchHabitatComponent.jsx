@@ -14,7 +14,8 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   // Available search fields
   const allFields = [
     { id: 'habitatName', label: 'Vegetation type', enabledIn: ['habitats', 'personal'] },
-    { id: 'location', label: 'Location', enabledIn: ['habitats', 'personal'] },
+    { id: 'state', label: 'State/Region', enabledIn: ['habitats', 'personal'] },
+    { id: 'country', label: 'Country', enabledIn: ['habitats', 'personal'] },
     { id: 'userName', label: 'User Name', enabledIn: ['habitats', 'personal'] },
     { id: 'userEmail', label: 'Email', enabledIn: ['habitats', 'personal'] },
     { id: 'group', label: 'Group', enabledIn: ['habitats', 'personal'] },

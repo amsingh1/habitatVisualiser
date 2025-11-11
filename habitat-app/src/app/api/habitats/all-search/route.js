@@ -25,12 +25,6 @@ export async function GET(req) {
     if (searchField === 'group') {
       searchField = 'habitatName'; // Default to habitatName for group
     }
-    
-    // Support for location field mapping
-    if (searchField === 'location') {
-      // We'll handle this specially below
-      searchField = 'state'; // Default to state for location searches
-    }
     // Identify the user
     const userId = session.user.id;
     const userEmail = session.user.email;
