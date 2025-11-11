@@ -22,7 +22,8 @@ export default function AuthNavBar() {
   const navLinks = session && [
     // { href: "/protected/dashboard", label: "Dashboard" },
     { href: "/habitats", label: "Explore" },
-    { href: "/my-images", label: "My Observations" }
+    { href: "/my-images", label: "My Observations" },
+    { href: "/community", label: "Community" }
   ];
 
   // Get the style for a nav link based on whether it's active
@@ -36,6 +37,10 @@ export default function AuthNavBar() {
     } else if (href === '/my-images') {
       // Exact match for my-images
       const isActive = pathname === '/my-images' || pathname.startsWith('/my-images/');
+      return isActive ? activeLinkClasses : linkClasses;
+    } else if (href === '/community') {
+      // Exact match for community
+      const isActive = pathname === '/community' || pathname.startsWith('/community/');
       return isActive ? activeLinkClasses : linkClasses;
     } else {
       // For other links, exact match only
