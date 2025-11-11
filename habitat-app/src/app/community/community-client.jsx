@@ -7,9 +7,18 @@ export default function CommunityClient() {
   const [leaderboards, setLeaderboards] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [, forceUpdate] = useState(0);
 
   useEffect(() => {
     fetchLeaderboards();
+    
+    // Update the timestamp display every 30 seconds
+    const interval = setInterval(() => {
+      forceUpdate(prev => prev + 1);
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchLeaderboards = async () => {
@@ -23,12 +32,28 @@ export default function CommunityClient() {
       
       const data = await response.json();
       setLeaderboards(data);
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching leaderboards:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getUpdateTimeText = () => {
+    if (!lastUpdated) return 'Loading...';
+    
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - lastUpdated) / 1000);
+    
+    if (diffInSeconds < 60) return 'Updated less than a minute ago';
+    if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `Updated ${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    }
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `Updated ${hours} hour${hours > 1 ? 's' : ''} ago`;
   };
 
   if (loading) {
@@ -56,7 +81,7 @@ export default function CommunityClient() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Leaderboards</h1>
         <p className="text-sm text-gray-500">
-          Updated daily (less than a minute ago)
+          {getUpdateTimeText()}
         </p>
       </div>
 
