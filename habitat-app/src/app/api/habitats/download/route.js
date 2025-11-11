@@ -130,7 +130,7 @@ class DownloadService {
 // Generate CSV for habitat metadata
 function generateCSV(habitats) {
   const headers = [
-    'ID', 'Habitat Name', 'Location', 'GPS Coordinate', 'Date', 'Notes',
+    'ID', 'Habitat Name', 'State', 'Country', 'GPS Coordinate', 'Date', 'Notes',
     'Dominant Species 1', 'Dominant Species 2', 'Dominant Species 3',
     'Code', 'EVC Code', 'Author Name', 'Author Email', 'Created At', 
     'Image Count', 'Image URLs'
@@ -139,7 +139,8 @@ function generateCSV(habitats) {
   const rows = habitats.map(habitat => [
     `"${habitat._id}"`,
     `"${habitat.habitatName || ''}"`,
-    `"${habitat.location || ''}"`,
+    `"${habitat.state || ''}"`,
+    `"${habitat.country || ''}"`,
     `"${habitat.gpsCoordinate || ''}"`,
     `"${habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : ''}"`,
     `"${(habitat.notes || '').replace(/"/g, '""')}"`,

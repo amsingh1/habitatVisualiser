@@ -28,8 +28,16 @@ export async function POST(req) {
     console.log("Connected to database");
     
     // Extract data
-    const { habitatName, location, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate, code, 
+    const { habitatName, state, country, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate, code, 
             evcCode} = data;
+    
+    // Validate that either state+country or location is provided
+    if ((!state || !country)) {
+      return NextResponse.json(
+        { success: false, message: 'Please provide both state and country' },
+        { status: 400 }
+      );
+    }
     
     // Log session user structure to understand what's available
     console.log("Session user:", session.user);
@@ -40,7 +48,8 @@ export async function POST(req) {
     const habitatData = {
       gpsCoordinate,
       habitatName,
-      location,
+      state,
+      country,
       date: date || new Date(),
       notes,
       dominantSpecies1,
@@ -244,7 +253,7 @@ export async function PUT(req) {
     console.log("Connected to database");
     
     // Extract habitat ID and updated data
-    const { habitatId, habitatName, location, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate } = data;
+    const { habitatId, habitatName, state, country, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate } = data;
     
     if (!habitatId) {
       return NextResponse.json(
@@ -274,7 +283,8 @@ export async function PUT(req) {
     // Prepare data for updating
     const updateData = {
       habitatName: habitatName !== undefined ? habitatName : existingHabitat.habitatName,
-      location: location !== undefined ? location : existingHabitat.location,
+      state: state !== undefined ? state : existingHabitat.state,
+      country: country !== undefined ? country : existingHabitat.country,
       date: date !== undefined ? date : existingHabitat.date,
       notes: notes !== undefined ? notes : existingHabitat.notes,
       dominantSpecies1: dominantSpecies1 !== undefined ? dominantSpecies1 : existingHabitat.dominantSpecies1,

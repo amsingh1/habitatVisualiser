@@ -106,11 +106,15 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
       // Get location name
      const locationName = await getLocationName(formattedLat, formattedLng);
 
-      // Notify parent
-        // Notify parent with both coordinate and location
-  if (onSelectCoordinate) {
-    onSelectCoordinate(`${formattedLat},${formattedLng}`, locationName);
-  }
+      // Parse the location to extract state and country
+      const locationParts = locationName.split(', ');
+      const state = locationParts.length >= 2 ? locationParts[0] : locationName;
+      const country = locationParts.length >= 2 ? locationParts[1] : '';
+
+      // Notify parent with coordinate, state, and country
+      if (onSelectCoordinate) {
+        onSelectCoordinate(`${formattedLat},${formattedLng}`, state, country);
+      }
 
       // Clear the selection flag
       setTimeout(() => {

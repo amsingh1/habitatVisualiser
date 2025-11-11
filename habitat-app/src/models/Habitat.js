@@ -6,9 +6,13 @@ const HabitatSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide a habitat name'],
     },
-    location: {
+    state: {
       type: String,
-      required: [true, 'Please provide a location'],
+      required: [true, 'Please provide a state'],
+    },
+    country: {
+      type: String,
+      required: [true, 'Please provide a country'],
     },
     gpsCoordinate: {
       type: String,
@@ -59,7 +63,11 @@ const HabitatSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Check if model exists already to prevent overwrite error in development with hot reloading
-const Habitat = mongoose.models.Habitat || mongoose.model('Habitat', HabitatSchema);
+// Force delete cached model to ensure schema updates are applied
+if (mongoose.models.Habitat) {
+  delete mongoose.models.Habitat;
+}
+
+const Habitat = mongoose.model('Habitat', HabitatSchema);
 
 export default Habitat;

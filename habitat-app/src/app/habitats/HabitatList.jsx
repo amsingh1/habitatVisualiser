@@ -46,7 +46,7 @@ export default function HabitatList({ habitats }) {
             </div>
             <div className="p-4">
               <h3 className="text-lg font-semibold">{habitat.habitatName}</h3>
-              <p className="text-gray-600">{habitat.location}</p>
+              <p className="text-gray-600">{habitat.state}, {habitat.country}</p>
               <p className="text-gray-500 text-sm">{formatDate(habitat.date)}</p>
             </div>
           </div>
@@ -82,7 +82,7 @@ export default function HabitatList({ habitats }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Location</h3>
-                  <p className="mt-1">{selectedHabitat.location}</p>
+                  <p className="mt-1">{selectedHabitat.state}, {selectedHabitat.country}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Date</h3>

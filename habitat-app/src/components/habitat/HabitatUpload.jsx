@@ -37,13 +37,15 @@ export default function HabitatUpload() {
   const [habitatName, setHabitatName] = useState('');
   const [code, setCode] = useState('');
   const [evcCode, setEvcCode] = useState('');
-  const [location, setLocation] = useState('');
+  const [state, setState] = useState('');
+  const [country, setCountry] = useState('');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
   const [dominantSpecies1, setDominantSpecies1] = useState('');
   const [dominantSpecies2, setDominantSpecies2] = useState('');
   const [dominantSpecies3, setDominantSpecies3] = useState('');
-  const [coordinate, setCoordinate] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
@@ -74,13 +76,22 @@ export default function HabitatUpload() {
         
         // Set form values
         setHabitatName(habitat.habitatName || '');
-        setLocation(habitat.location || '');
+        setState(habitat.state || '');
+        setCountry(habitat.country || '');
         setDate(habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : '');
         setNotes(habitat.notes || '');
         setDominantSpecies1(habitat.dominantSpecies1 || '');
         setDominantSpecies2(habitat.dominantSpecies2 || '');
         setDominantSpecies3(habitat.dominantSpecies3 || '');
-        setCoordinate(habitat.gpsCoordinate || '');
+        
+        // Parse GPS coordinate if it exists
+        if (habitat.gpsCoordinate) {
+          const coords = habitat.gpsCoordinate.split(',');
+          if (coords.length === 2) {
+            setLatitude(coords[0].trim());
+            setLongitude(coords[1].trim());
+          }
+        }
         
         // Set existing images
         if (habitat.imageUrl && habitat.imageUrl.length > 0) {
@@ -104,12 +115,13 @@ export default function HabitatUpload() {
     
     const extractExifData = async () => {
       // Handle clearing fields when useExifData is toggled off
-      if (!useExifData) {
+        if (!useExifData) {
         // If we're not using EXIF data, clear the fields that might have been populated by EXIF
         if (exifData) {
-          // Clear coordinate if it was set from EXIF data
+          // Clear coordinates if they were set from EXIF data
           if (exifData.latitude && exifData.longitude) {
-            setCoordinate('');
+            setLatitude('');
+            setLongitude('');
           }
           
           // Clear date if it was set from EXIF data
@@ -118,9 +130,7 @@ export default function HabitatUpload() {
           }
         }
         return;
-      }
-
-      // Only proceed if there are files and shouldProcessExif flag is true
+      }      // Only proceed if there are files and shouldProcessExif flag is true
       if (!shouldProcessExif) return;
       
       // Show the loading indicator
@@ -159,8 +169,8 @@ export default function HabitatUpload() {
         if (foundUsefulExif && extractedData) {
           // Populate GPS coordinates if available
           if (extractedData.latitude && extractedData.longitude) {
-            const coordString = `${extractedData.latitude},${extractedData.longitude}`;
-            setCoordinate(coordString);
+            setLatitude(extractedData.latitude.toString());
+            setLongitude(extractedData.longitude.toString());
           }
             
           // Populate date if available
@@ -321,10 +331,11 @@ export default function HabitatUpload() {
   
     // If no images remain, clear the EXIF data and form fields
     if (updatedFiles.length === 0) {
-      // If useExifData is true and we have EXIF data, clear the coordinate and date fields
+      // If useExifData is true and we have EXIF data, clear the coordinates and date fields
       if (useExifData && exifData) {
         if (exifData.latitude && exifData.longitude) {
-          setCoordinate('');
+          setLatitude('');
+          setLongitude('');
         }
         if (exifData.DateTimeOriginal) {
           setDate('');
@@ -369,13 +380,31 @@ export default function HabitatUpload() {
       return;
     }
     
-    if (!habitatName || !location) {
-      setError('Vegetation type name and location are required');
+    if (!habitatName || !state || !country) {
+      setError('Vegetation type name, state, and country are required');
       return;
     }
     
-    if (!coordinate) {
-      setError('GPS coordinate is required');
+    if (!latitude || !longitude) {
+      setError('Both latitude and longitude are required');
+      return;
+    }
+    
+    // Validate latitude and longitude are numbers
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    if (isNaN(lat) || isNaN(lng)) {
+      setError('Latitude and longitude must be valid numbers');
+      return;
+    }
+    
+    if (lat < -90 || lat > 90) {
+      setError('Latitude must be between -90 and 90');
+      return;
+    }
+    
+    if (lng < -180 || lng > 180) {
+      setError('Longitude must be between -180 and 180');
       return;
     }
     
@@ -416,9 +445,10 @@ export default function HabitatUpload() {
       
       // Prepare data for API call
       const habitatData = {
-        gpsCoordinate: coordinate,
+        gpsCoordinate: `${latitude},${longitude}`,
         habitatName,
-        location,
+        state,
+        country,
         date: date || new Date().toISOString(),
         notes,
         dominantSpecies1,
@@ -461,14 +491,16 @@ export default function HabitatUpload() {
       
       // Reset form and redirect
       setHabitatName('');
-      setLocation('');
+      setState('');
+      setCountry('');
       setDate('');
       setNotes('');
       setDominantSpecies1('');
       setDominantSpecies2('');
       setDominantSpecies3('');
       setSelectedFiles([]);
-      setCoordinate('');
+      setLatitude('');
+      setLongitude('');
       setPreviews([]);
       setExistingImages([]);
       
@@ -653,31 +685,49 @@ export default function HabitatUpload() {
         </div>
         
         <div className="mb-4">
-          <label htmlFor="coordinate" className="block text-sm font-medium text-gray-700 mb-1">
-            GPS Coordinate
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            GPS Coordinates
           </label>
-          <div className="relative">
-            <input
-              type="text"
-              id="coordinate"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              value={coordinate}
-              onChange={(e) => setCoordinate(e.target.value)}
-              onClick={() => setShowMap(true)}
-              placeholder="Enter GPS coordinate ex. 28.6139,77.2090 or click to select on map"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowMap(!showMap)}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 bg-gray-100 rounded-md hover:bg-gray-200"
-              title={showMap ? "Hide map" : "Show map to select coordinates"}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </button>
-          </div>          {/* EXIF Data Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="latitude" className="block text-xs text-gray-600 mb-1">
+                Latitude
+              </label>
+              <input
+                type="text"
+                id="latitude"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                placeholder="e.g., 28.6139"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="longitude" className="block text-xs text-gray-600 mb-1">
+                Longitude
+              </label>
+              <input
+                type="text"
+                id="longitude"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                placeholder="e.g., 77.2090"
+                required
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowMap(!showMap)}
+            className="mt-2 flex items-center text-sm text-indigo-600 hover:text-indigo-800"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            {showMap ? "Hide map" : "Select coordinates from map"}
+          </button>          {/* EXIF Data Info */}
           {isLoadingExif && (
             <div className="mt-2 text-sm">
               <div className="flex items-center text-indigo-600">
@@ -730,10 +780,15 @@ export default function HabitatUpload() {
           {showMap && (
             <div className="border border-gray-300 rounded-md mt-2 overflow-hidden" style={{ height: '400px' }}>
               <MapSelector 
-                currentCoordinate={coordinate} 
-                onSelectCoordinate={(value, locationName) => {
-                  setCoordinate(value);
-                  setLocation(locationName); 
+                currentCoordinate={latitude && longitude ? `${latitude},${longitude}` : ''} 
+                onSelectCoordinate={(value, stateValue, countryValue) => {
+                  const coords = value.split(',');
+                  if (coords.length === 2) {
+                    setLatitude(coords[0].trim());
+                    setLongitude(coords[1].trim());
+                  }
+                  setState(stateValue); 
+                  setCountry(countryValue);
                 }}
               />
             </div>
@@ -741,18 +796,39 @@ export default function HabitatUpload() {
         </div>
         
         <div className="mb-4">
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Location
           </label>
-          <input
-            type="text"
-            id="location"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="Enter location"
-            required
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="state" className="block text-xs text-gray-600 mb-1">
+                State/Region
+              </label>
+              <input
+                type="text"
+                id="state"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                placeholder="e.g., Bavaria"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="country" className="block text-xs text-gray-600 mb-1">
+                Country
+              </label>
+              <input
+                type="text"
+                id="country"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder="e.g., Germany"
+                required
+              />
+            </div>
+          </div>
         </div>
         
         <div className="mb-4">

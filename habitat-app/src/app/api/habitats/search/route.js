@@ -9,6 +9,8 @@ export async function GET(req) {
     // Get search parameters from URL
     const { searchParams } = new URL(req.url);
     const query = searchParams.get('query') || '';
+    const state = searchParams.get('state') || '';
+    const country = searchParams.get('country') || '';
     
     await connectDB();
     
@@ -19,13 +21,26 @@ export async function GET(req) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
-    // Create regex for case-insensitive search
-    const searchRegex = new RegExp(query, 'i');
+    // Build search criteria
+    const searchCriteria = {};
     
-    // Search for habitats matching the query
-    const habitats = await Habitat.find({
-      habitatName: { $regex: searchRegex }
-    }).limit(10);
+    if (query) {
+      const searchRegex = new RegExp(query, 'i');
+      searchCriteria.habitatName = { $regex: searchRegex };
+    }
+    
+    if (state) {
+      const stateRegex = new RegExp(state, 'i');
+      searchCriteria.state = { $regex: stateRegex };
+    }
+    
+    if (country) {
+      const countryRegex = new RegExp(country, 'i');
+      searchCriteria.country = { $regex: countryRegex };
+    }
+    
+    // Search for habitats matching the criteria
+    const habitats = await Habitat.find(searchCriteria).limit(10);
     
     return NextResponse.json({ habitats });
   } catch (error) {

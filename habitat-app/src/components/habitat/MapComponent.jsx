@@ -66,7 +66,7 @@ export default function MapComponent({ habitats, mapCenter }) {
                 ? `${habitat.habitatName.substring(0, 20)}...` 
                 : habitat.habitatName}
             </h3>
-              <p>Location: {habitat.location}</p>
+              <p>Location: {habitat.state}, {habitat.country}</p>
               {habitat.gpsCoordinate && <p>Coordinates: {habitat.gpsCoordinate}</p>}
               <p>Date: {new Date(habitat.date).toLocaleDateString()}</p>
               {habitat.notes && <p>Notes: {habitat.notes}</p>}
