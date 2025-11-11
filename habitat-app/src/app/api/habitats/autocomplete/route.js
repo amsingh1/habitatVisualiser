@@ -52,7 +52,7 @@ export async function GET(req) {
       // First, find habitats matching the habitat name
       const matchingHabitats = await Habitat.find({
         habitatName: { $regex: `^${searchText}`, $options: 'i' }
-      }).select('EVC_code').lean();
+      }).select('EVC_code').lean().exec();
 
       // Extract unique first 3 characters of EVC codes
       const evcCodePrefixes = [...new Set(
@@ -70,9 +70,10 @@ export async function GET(req) {
             $in: evcCodePrefixes.map(prefix => new RegExp(`^${prefix}`))
           }
         })
-        .select('habitatName EVC_code')  // Only select the fields we need
+        .select('habitatName EVC_code')
         .limit(limit)
-        .lean();
+        .lean()
+        .exec();
       
         return NextResponse.json({
           suggestions: habitatsWithMatchingEVC.map(h => ({
