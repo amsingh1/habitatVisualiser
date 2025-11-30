@@ -16,8 +16,8 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     { id: 'habitatName', label: 'Vegetation type', enabledIn: ['habitats', 'personal'] },
     { id: 'state', label: 'State/Region', enabledIn: ['habitats', 'personal'] },
     { id: 'country', label: 'Country', enabledIn: ['habitats', 'personal'] },
-    { id: 'userName', label: 'User Name', enabledIn: ['habitats', 'personal'] },
-    { id: 'userEmail', label: 'Email', enabledIn: ['habitats', 'personal'] },
+    { id: 'userName', label: 'User Name', enabledIn: ['habitats'] },
+    { id: 'userEmail', label: 'Email', enabledIn: ['habitats'] },
     { id: 'group', label: 'Group', enabledIn: ['habitats', 'personal'] },
   ];
   
