@@ -41,9 +41,11 @@ export default function HabitatMap({ dataType='habitats' }) {
       }).toString();
       return `/api/habitats/all-search?${queryString}`;
     } 
-    // Otherwise, use the default endpoint
-    return `/api/habitats`;
     
+    // Otherwise use standard endpoints based on dataType
+    return dataType === 'personal' 
+      ? `/api/habitats/my` 
+      : '/api/habitats';
   };
   
   // Use SWR to fetch and keep habitats data up-to-date

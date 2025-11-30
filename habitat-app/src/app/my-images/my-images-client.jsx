@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import HabitatList from '@/components/habitat/HabitatList';
+import HabitatMap from '@/components/habitat/HabitatMap';
 import Link from 'next/link';
 import SearchHabitatComponent from '@/components/SearchHabitatComponent';
 export default function MyImagesClient() {
@@ -121,7 +122,14 @@ export default function MyImagesClient() {
               </Link>
             </div>
           ) : (
-            <HabitatList dataType = "personal" />
+            <div className="space-y-6">
+              <div className="border rounded-lg">
+                <HabitatMap dataType="personal" />
+              </div>
+              <div>
+                <HabitatList dataType="personal" />
+              </div>
+            </div>
           )}
         </>
       )}
