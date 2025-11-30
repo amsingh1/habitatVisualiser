@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import connectDB from '@/lib/mongodb';
 import Habitat from '@/models/Habitat';
+import User from '@/models/User';
 import archiver from 'archiver';
 
 // Simple Download Service - works with URLs as-is
@@ -128,33 +129,63 @@ class DownloadService {
 }
 
 // Generate CSV for habitat metadata
+// Each image gets its own row with a unique Image ID that matches the filename
 function generateCSV(habitats) {
   const headers = [
-    'ID', 'Habitat Name', 'State', 'Country', 'GPS Coordinate', 'Date', 'Notes',
+    'Habitat ID', 'Image ID', 'Habitat Name', 'State', 'Country', 'GPS Coordinate', 'Date', 
     'Dominant Species 1', 'Dominant Species 2', 'Dominant Species 3',
-    'Code', 'EVC Code', 'Author Name', 'Author Email', 'Created At', 
-    'Image Count', 'Image URLs'
+    'Notes', 'Code', 'EVC Code', 'Author Name', 'Author Email', 'Created At'
   ].join(',');
 
-  const rows = habitats.map(habitat => [
-    `"${habitat._id}"`,
-    `"${habitat.habitatName || ''}"`,
-    `"${habitat.state || ''}"`,
-    `"${habitat.country || ''}"`,
-    `"${habitat.gpsCoordinate || ''}"`,
-    `"${habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : ''}"`,
-    `"${(habitat.notes || '').replace(/"/g, '""')}"`,
-    `"${habitat.dominantSpecies1 || ''}"`,
-    `"${habitat.dominantSpecies2 || ''}"`,
-    `"${habitat.dominantSpecies3 || ''}"`,
-    `"${habitat.code || ''}"`,
-    `"${habitat.EVC_code || ''}"`,
-    `"${habitat.userName || ''}"`,
-    `"${habitat.userEmail || ''}"`,
-    `"${new Date(habitat.createdAt).toISOString()}"`,
-    `"${habitat.imageUrl ? habitat.imageUrl.length : 0}"`,
-    `"${habitat.imageUrl ? habitat.imageUrl.join('; ') : ''}"`
-  ].join(','));
+  const rows = [];
+  
+  habitats.forEach(habitat => {
+    const imageCount = habitat.imageUrl ? habitat.imageUrl.length : 0;
+    
+    if (imageCount === 0) {
+      // If no images, still create one row with empty Image ID
+      rows.push([
+        `"${habitat._id}"`,
+        `""`,
+        `"${habitat.habitatName || ''}"`,
+        `"${habitat.state || ''}"`,
+        `"${habitat.country || ''}"`,
+        `"${habitat.gpsCoordinate || ''}"`,
+        `"${habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : ''}"`,
+        `"${habitat.dominantSpecies1 || ''}"`,
+        `"${habitat.dominantSpecies2 || ''}"`,
+        `"${habitat.dominantSpecies3 || ''}"`,
+        `"${(habitat.notes || '').replace(/"/g, '""')}"`,
+        `"${habitat.code || ''}"`,
+        `"${habitat.EVC_code || ''}"`,
+        `"${habitat.userName || ''}"`,
+        `"${habitat.userEmail || ''}"`,
+        `"${new Date(habitat.createdAt).toISOString()}"`
+      ].join(','));
+    } else {
+      // Create one row per image
+      for (let i = 0; i < imageCount; i++) {
+        rows.push([
+          `"${habitat._id}"`,
+          `"image_${i + 1}"`,
+          `"${habitat.habitatName || ''}"`,
+          `"${habitat.state || ''}"`,
+          `"${habitat.country || ''}"`,
+          `"${habitat.gpsCoordinate || ''}"`,
+          `"${habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : ''}"`,
+          `"${habitat.dominantSpecies1 || ''}"`,
+          `"${habitat.dominantSpecies2 || ''}"`,
+          `"${habitat.dominantSpecies3 || ''}"`,
+          `"${(habitat.notes || '').replace(/"/g, '""')}"`,
+          `"${habitat.code || ''}"`,
+          `"${habitat.EVC_code || ''}"`,
+          `"${habitat.userName || ''}"`,
+          `"${habitat.userEmail || ''}"`,
+          `"${new Date(habitat.createdAt).toISOString()}"`
+        ].join(','));
+      }
+    }
+  });
 
   return headers + '\n' + rows.join('\n');
 }
@@ -163,7 +194,7 @@ export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ message: 'Unauthorized - Please sign in to download' }, { status: 401 });
     }
 
     await connectDB();
@@ -173,9 +204,32 @@ export async function POST(req) {
       return NextResponse.json({ message: 'No habitats selected' }, { status: 400 });
     }
 
-    const habitats = await Habitat.find({ _id: { $in: habitatIds } }).lean();
+    // Check user role
+    const user = await User.findOne({ email: session.user.email }).lean();
+    const isAdmin = user?.role === 'admin';
+
+    // Fetch requested habitats
+    let habitats = await Habitat.find({ _id: { $in: habitatIds } }).lean();
+    
     if (!habitats.length) {
       return NextResponse.json({ message: 'No habitats found' }, { status: 404 });
+    }
+
+    // Authorization: Regular users can only download their own habitats
+    if (!isAdmin) {
+      const userEmail = session.user.email;
+      habitats = habitats.filter(habitat => habitat.userEmail === userEmail);
+      
+      if (habitats.length === 0) {
+        return NextResponse.json({ 
+          message: 'Access denied - You can only download your own images' 
+        }, { status: 403 });
+      }
+      
+      // If some habitats were filtered out, inform the user
+      if (habitats.length < habitatIds.length) {
+        console.log(`User ${userEmail} attempted to download ${habitatIds.length} habitats but only has access to ${habitats.length}`);
+      }
     }
 
     const downloadService = new DownloadService();
@@ -183,11 +237,16 @@ export async function POST(req) {
     // CSV only
     if (downloadType === 'csv') {
       const csvContent = generateCSV(habitats);
-      const filename = `habitat_data_${new Date().toISOString().split('T')[0]}.csv`;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `habitat_data_${timestamp}.csv`;
       
-      return new NextResponse(csvContent, {
+      // Add UTF-8 BOM to ensure proper encoding in Excel and other applications
+      const BOM = '\uFEFF';
+      const csvWithBOM = BOM + csvContent;
+      
+      return new NextResponse(csvWithBOM, {
         headers: {
-          'Content-Type': 'text/csv',
+          'Content-Type': 'text/csv; charset=utf-8',
           'Content-Disposition': `attachment; filename="${filename}"`,
         },
       });
@@ -203,7 +262,8 @@ export async function POST(req) {
           archive.on('data', chunk => chunks.push(chunk));
           archive.on('end', () => {
             const buffer = Buffer.concat(chunks);
-            const filename = `habitat_export_${new Date().toISOString().split('T')[0]}.zip`;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `habitat_export_${timestamp}.zip`;
             
             resolve(new NextResponse(buffer, {
               headers: {
@@ -217,7 +277,11 @@ export async function POST(req) {
           // Add CSV metadata if ZIP
           if (downloadType === 'zip') {
             const csvContent = generateCSV(habitats);
-            archive.append(csvContent, { name: 'habitat_metadata.csv' });
+            // Add UTF-8 BOM to ensure proper encoding
+            const BOM = '\uFEFF';
+            const csvWithBOM = BOM + csvContent;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            archive.append(Buffer.from(csvWithBOM, 'utf8'), { name: `habitat_metadata_${timestamp}.csv` });
           }
 
           // Process images

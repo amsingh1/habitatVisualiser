@@ -22,6 +22,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [habitatToDelete, setHabitatToDelete] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   
   // Get search parameters from URL
   const searchParams = useSearchParams();
@@ -55,6 +56,34 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
   
   // Extract habitats from data
   const habitats = data?.habitats || [];
+
+  // Fetch user role
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (session?.user?.email) {
+        try {
+          const response = await fetch(`/api/auth/user-role`);
+          if (response.ok) {
+            const data = await response.json();
+            setUserRole(data.role);
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+        }
+      }
+    };
+    fetchUserRole();
+  }, [session]);
+
+  // Check if user can download a habitat
+  const canDownloadHabitat = (habitat) => {
+    if (!session?.user?.email) return false;
+    if (userRole === 'admin') return true;
+    return habitat.userEmail === session.user.email;
+  };
+
+  // Get list of downloadable habitats
+  const downloadableHabitats = habitats.filter(canDownloadHabitat);
 
   // Add event listener for habitat selection from the map
   useEffect(() => {
@@ -123,6 +152,9 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
   };
 
   const toggleHabitatSelection = (habitat) => {
+    // Only allow selection if user can download this habitat
+    if (!canDownloadHabitat(habitat)) return;
+    
     setSelectedHabitats(prev => {
       const isSelected = prev.some(h => h._id === habitat._id);
       if (isSelected) {
@@ -134,7 +166,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
   };
 
   const selectAllHabitats = () => {
-    setSelectedHabitats(habitats);
+    setSelectedHabitats(downloadableHabitats);
   };
 
   const clearSelection = () => {
@@ -231,7 +263,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
               {isSelectionMode && (
                 <>
                   <span className="text-sm text-gray-600">
-                    {selectedHabitats.length} of {habitats.length} selected
+                    {selectedHabitats.length} of {downloadableHabitats.length} selected
                   </span>
                   
                   <div className="flex space-x-2">
@@ -313,8 +345,8 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
             />
           )}
           
-          {/* Selection checkbox - only show in selection mode */}
-          {isSelectionMode && (
+          {/* Selection checkbox - only show in selection mode and for downloadable habitats */}
+          {isSelectionMode && canDownloadHabitat(habitat) && (
             <div className="absolute top-2 left-2">
               <input
                 type="checkbox"
@@ -323,6 +355,13 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                 className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 onClick={(e) => e.stopPropagation()}
               />
+            </div>
+          )}
+          
+          {/* Badge for non-downloadable habitats in selection mode */}
+          {isSelectionMode && !canDownloadHabitat(habitat) && (
+            <div className="absolute top-2 left-2 bg-gray-500 bg-opacity-75 text-white px-2 py-1 rounded text-xs">
+              Not downloadable
             </div>
           )}
           
