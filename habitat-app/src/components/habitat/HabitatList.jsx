@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import useSWR from 'swr';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -29,33 +29,54 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
   const searchText = searchParams.get('q') || '';
   const searchField = searchParams.get('field') || 'habitatName'; // Default to habitatName
   const searchContext = searchParams.get('context') || dataType;
+  const monthFilter = searchParams.get('monthFilter') || '';
+  const yearFilter = searchParams.get('yearFilter') || '';
+  const sortBy = searchParams.get('sortBy') || '';
   
   // Determine if a search is being performed
   const isSearching = searchText !== '';
   
   // Determine the API endpoint based on dataType and search parameters
   const getApiEndpoint = () => {
+    const params = new URLSearchParams();
+    
     // If searching, use search endpoint
     if (isSearching) {
-      const queryString = new URLSearchParams({
-        q: searchText,
-        field: searchField,
-        context: dataType
-      }).toString();
-      return `/api/habitats/all-search?${queryString}`;
+      params.set('q', searchText);
+      params.set('field', searchField);
+      params.set('context', dataType);
     }
     
-    // Otherwise use standard endpoints
-    return dataType === 'personal' 
-      ? `/api/habitats/my` 
-      : '/api/habitats';
+    // Add filter and sort parameters (for all endpoints)
+    if (monthFilter && monthFilter !== 'all') {
+      params.set('monthFilter', monthFilter);
+    }
+    if (yearFilter && yearFilter !== 'all') {
+      params.set('yearFilter', yearFilter);
+    }
+    if (sortBy && sortBy !== 'upload_desc') {
+      params.set('sortBy', sortBy);
+    }
+    
+    // Determine base endpoint
+    let baseEndpoint;
+    if (isSearching) {
+      baseEndpoint = '/api/habitats/all-search';
+    } else if (dataType === 'personal') {
+      baseEndpoint = '/api/habitats/my';
+    } else {
+      baseEndpoint = '/api/habitats';
+    }
+    
+    const queryString = params.toString();
+    return queryString ? `${baseEndpoint}?${queryString}` : baseEndpoint;
   };
   
   // Use SWR to fetch and keep habitats data up-to-date
   const { data, error, isLoading, mutate } = useSWR(getApiEndpoint(), fetcher);
   
   // Extract habitats from data
-  const habitats = data?.habitats || [];
+  const habitats = useMemo(() => data?.habitats || [], [data?.habitats]);
 
   // Fetch user role
   useEffect(() => {

@@ -21,6 +21,9 @@ export async function GET(req) {
     const searchText = searchParams.get('q')?.trim() || '';
     let searchField = searchParams.get('field') || 'habitatName'; // Default to habitatName
     const context = searchParams.get('context') || 'habitats';
+    const monthFilter = searchParams.get('monthFilter');
+    const yearFilter = searchParams.get('yearFilter');
+    const sortBy = searchParams.get('sortBy') || 'upload_desc';
     
     if (searchField === 'group') {
       searchField = 'habitatName'; // Default to habitatName for group
@@ -31,39 +34,70 @@ export async function GET(req) {
     
     // Build the search query
     let searchQuery = {};
+    let andConditions = [];
     
     // If context is 'personal', only search user's own habitats
     if (context === 'personal') {
       if (userId) {
-        searchQuery.user = userId;
+        andConditions.push({ user: userId });
       } else {
-        searchQuery.userEmail = userEmail;
+        andConditions.push({ userEmail: userEmail });
       }
     }
     
     // If search text is provided, add text search condition
     if (searchText.trim()) {
       // Create search condition for the selected field - using exact match (case insensitive)
-      const fieldCondition = {
+      andConditions.push({
         [searchField]: { $regex: `^${searchText}$`, $options: 'i' }
-      };
-      
-      // If we already have user filters, combine with $and
-      if (Object.keys(searchQuery).length > 0) {
-        searchQuery = {
-          $and: [
-            searchQuery,
-            fieldCondition
-          ]
-        };
-      } else {
-        // Otherwise just use the field condition
-        searchQuery = fieldCondition;
-      }
+      });
     }
     
-    // Execute the search
-    const habitats = await Habitat.find(searchQuery).sort({ createdAt: -1 });
+    // Combine all AND conditions
+    if (andConditions.length > 0) {
+      searchQuery.$and = andConditions;
+    }
+    
+    // Month filter (based on createdAt)
+    if (monthFilter && monthFilter !== 'all') {
+      const month = parseInt(monthFilter);
+      searchQuery.$expr = searchQuery.$expr || {};
+      searchQuery.$expr.$and = searchQuery.$expr.$and || [];
+      searchQuery.$expr.$and.push({ $eq: [{ $month: '$createdAt' }, month] });
+    }
+    
+    // Year filter (based on createdAt)
+    if (yearFilter && yearFilter !== 'all') {
+      const year = parseInt(yearFilter);
+      searchQuery.$expr = searchQuery.$expr || {};
+      searchQuery.$expr.$and = searchQuery.$expr.$and || [];
+      searchQuery.$expr.$and.push({ $eq: [{ $year: '$createdAt' }, year] });
+    }
+    
+    // Determine sort option
+    let sortOption = { createdAt: -1 }; // default
+    switch(sortBy) {
+      case 'upload_asc':
+        sortOption = { createdAt: 1 };
+        break;
+      case 'observation_desc':
+        sortOption = { date: -1 };
+        break;
+      case 'observation_asc':
+        sortOption = { date: 1 };
+        break;
+      case 'vegetation_asc':
+        sortOption = { habitatName: 1 };
+        break;
+      case 'vegetation_desc':
+        sortOption = { habitatName: -1 };
+        break;
+      default:
+        sortOption = { createdAt: -1 };
+    }
+    
+    // Execute the search with filters and sorting
+    const habitats = await Habitat.find(searchQuery).sort(sortOption);
     
     return NextResponse.json({ habitats });
   } catch (error) {

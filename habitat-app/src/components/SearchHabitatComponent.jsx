@@ -10,6 +10,9 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   // Get current search values from URL
   const currentSearchText = searchParams.get('q') || '';
   const currentField = searchParams.get('field') || 'habitatName'; // Default to habitatName
+  const currentMonth = searchParams.get('monthFilter') || 'all';
+  const currentYear = searchParams.get('yearFilter') || 'all';
+  const currentSort = searchParams.get('sortBy') || 'upload_desc';
   
   // Available search fields
   const allFields = [
@@ -17,26 +20,66 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     { id: 'state', label: 'State/Region', enabledIn: ['habitats', 'personal'] },
     { id: 'country', label: 'Country', enabledIn: ['habitats', 'personal'] },
     { id: 'userName', label: 'User Name', enabledIn: ['habitats'] },
-    { id: 'userEmail', label: 'Email', enabledIn: ['habitats'] },
     { id: 'group', label: 'Group', enabledIn: ['habitats', 'personal'] },
   ];
   
   // Determine which fields to show based on context
   const availableFields = allFields.filter(field => field.enabledIn.includes(context));
   
+  // Month and sort options
+  const months = [
+    { value: 'all', label: 'All Months' },
+    { value: '1', label: 'January' },
+    { value: '2', label: 'February' },
+    { value: '3', label: 'March' },
+    { value: '4', label: 'April' },
+    { value: '5', label: 'May' },
+    { value: '6', label: 'June' },
+    { value: '7', label: 'July' },
+    { value: '8', label: 'August' },
+    { value: '9', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' },
+  ];
+  
+  const currentYearValue = new Date().getFullYear();
+  const years = [
+    { value: 'all', label: 'All Years' },
+    ...Array.from({ length: currentYearValue - 2024 }, (_, i) => ({
+      value: String(currentYearValue - i),
+      label: String(currentYearValue - i)
+    }))
+  ];
+  
+  const sortOptions = [
+    { value: 'upload_desc', label: 'Newest Upload' },
+    { value: 'upload_asc', label: 'Oldest Upload' },
+    { value: 'observation_desc', label: 'Observation Date (Recent)' },
+    { value: 'observation_asc', label: 'Observation Date (Oldest)' },
+    { value: 'vegetation_asc', label: 'Vegetation A-Z' },
+    { value: 'vegetation_desc', label: 'Vegetation Z-A' },
+  ];
+  
   // State for search text and selected field
   const [searchText, setSearchText] = useState(currentSearchText);
   const [selectedField, setSelectedField] = useState(currentField);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedSort, setSelectedSort] = useState(currentSort);
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
   
-  // Initialize selected field from URL or localStorage
+  // Initialize selected field, filters, and sort from URL or localStorage
   useEffect(() => {
     // Only run once on mount
     const savedField = localStorage.getItem(`${context}_searchField`);
+    const savedMonth = localStorage.getItem(`${context}_monthFilter`);
+    const savedYear = localStorage.getItem(`${context}_yearFilter`);
+    const savedSort = localStorage.getItem(`${context}_sortPreference`);
     
     if (currentField && availableFields.some(field => field.id === currentField)) {
       setSelectedField(currentField);
@@ -45,6 +88,27 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     } else {
       // Default to first available field
       setSelectedField(availableFields[0]?.id || 'habitatName');
+    }
+    
+    // Initialize month filter
+    if (currentMonth) {
+      setSelectedMonth(currentMonth);
+    } else if (savedMonth) {
+      setSelectedMonth(savedMonth);
+    }
+    
+    // Initialize year filter
+    if (currentYear) {
+      setSelectedYear(currentYear);
+    } else if (savedYear) {
+      setSelectedYear(savedYear);
+    }
+    
+    // Initialize sort preference
+    if (currentSort) {
+      setSelectedSort(currentSort);
+    } else if (savedSort) {
+      setSelectedSort(savedSort);
     }
   }, []);
   
@@ -145,8 +209,32 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     setSearchText('');
   };
   
+  // Handle month filter change
+  const handleMonthChange = (e) => {
+    const newMonth = e.target.value;
+    setSelectedMonth(newMonth);
+    localStorage.setItem(`${context}_monthFilter`, newMonth);
+    updateSearchUrl(searchText, selectedField, newMonth, selectedYear, selectedSort);
+  };
+  
+  // Handle year filter change
+  const handleYearChange = (e) => {
+    const newYear = e.target.value;
+    setSelectedYear(newYear);
+    localStorage.setItem(`${context}_yearFilter`, newYear);
+    updateSearchUrl(searchText, selectedField, selectedMonth, newYear, selectedSort);
+  };
+  
+  // Handle sort change
+  const handleSortChange = (e) => {
+    const newSort = e.target.value;
+    setSelectedSort(newSort);
+    localStorage.setItem(`${context}_sortPreference`, newSort);
+    updateSearchUrl(searchText, selectedField, selectedMonth, selectedYear, newSort);
+  };
+  
   // Update URL with search parameters
-  const updateSearchUrl = (text, field) => {
+  const updateSearchUrl = (text, field, month = selectedMonth, year = selectedYear, sort = selectedSort) => {
     // Create a new URLSearchParams object
     const params = new URLSearchParams();
     
@@ -157,6 +245,19 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     
     if (field) {
       params.set('field', field);
+    }
+    
+    // Add filter and sort parameters
+    if (month && month !== 'all') {
+      params.set('monthFilter', month);
+    }
+    
+    if (year && year !== 'all') {
+      params.set('yearFilter', year);
+    }
+    
+    if (sort && sort !== 'upload_desc') {
+      params.set('sortBy', sort);
     }
     
     // Add context if it's not the default
@@ -185,8 +286,9 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   };
   
   return (
-    <div className="relative w-full max-w-xl">
-      <form onSubmit={handleSubmit} className="w-full">
+    <div className="relative w-full max-w-4xl">
+      <form onSubmit={handleSubmit} className="w-full space-y-3">
+        {/* Search Row */}
         <div className="flex flex-col sm:flex-row gap-2">
           {/* Field dropdown selector */}
           <div className="w-full sm:w-1/3">
@@ -271,6 +373,54 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                 )}
               </div>
             )}
+          </div>
+        </div>
+        
+        {/* Filters and Sort Row */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* Month Filter */}
+          <div className="w-full sm:w-1/3">
+            <select
+              value={selectedMonth}
+              onChange={handleMonthChange}
+              className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              {months.map(month => (
+                <option key={month.value} value={month.value}>
+                  {month.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Year Filter */}
+          <div className="w-full sm:w-1/3">
+            <select
+              value={selectedYear}
+              onChange={handleYearChange}
+              className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              {years.map(year => (
+                <option key={year.value} value={year.value}>
+                  {year.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Sort Dropdown */}
+          <div className="w-full sm:w-1/3">
+            <select
+              value={selectedSort}
+              onChange={handleSortChange}
+              className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              {sortOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </form>

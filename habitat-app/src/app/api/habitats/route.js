@@ -130,8 +130,54 @@ export async function GET(req) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
       }
       
-      // Fetch all habitat entries for authenticated users
-      const habitats = await Habitat.find().sort({ createdAt: -1 }).lean();
+      // Get filter and sort parameters
+      const monthFilter = url.searchParams.get('monthFilter');
+      const yearFilter = url.searchParams.get('yearFilter');
+      const sortBy = url.searchParams.get('sortBy') || 'upload_desc';
+      
+      // Build query for filters
+      let query = {};
+      
+      // Month filter (based on createdAt)
+      if (monthFilter && monthFilter !== 'all') {
+        const month = parseInt(monthFilter);
+        query.$expr = query.$expr || {};
+        query.$expr.$and = query.$expr.$and || [];
+        query.$expr.$and.push({ $eq: [{ $month: '$createdAt' }, month] });
+      }
+      
+      // Year filter (based on createdAt)
+      if (yearFilter && yearFilter !== 'all') {
+        const year = parseInt(yearFilter);
+        query.$expr = query.$expr || {};
+        query.$expr.$and = query.$expr.$and || [];
+        query.$expr.$and.push({ $eq: [{ $year: '$createdAt' }, year] });
+      }
+      
+      // Determine sort option
+      let sortOption = { createdAt: -1 }; // default
+      switch(sortBy) {
+        case 'upload_asc':
+          sortOption = { createdAt: 1 };
+          break;
+        case 'observation_desc':
+          sortOption = { date: -1 };
+          break;
+        case 'observation_asc':
+          sortOption = { date: 1 };
+          break;
+        case 'vegetation_asc':
+          sortOption = { habitatName: 1 };
+          break;
+        case 'vegetation_desc':
+          sortOption = { habitatName: -1 };
+          break;
+        default:
+          sortOption = { createdAt: -1 };
+      }
+      
+      // Fetch all habitat entries for authenticated users with filters and sorting
+      const habitats = await Habitat.find(query).sort(sortOption).lean();
       return NextResponse.json({ habitats });
     } else {
       // For slider requests, return a limited set of images without requiring authentication
