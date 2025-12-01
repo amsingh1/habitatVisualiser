@@ -113,7 +113,7 @@ export default function MyImagesClient() {
         <>
           {habitats.length === 0 ? (
             <div className="text-center py-10 bg-gray-50 rounded-lg">
-              <p className="text-gray-500 mb-4">You haven't uploaded any habitat images yet.</p>
+              <p className="text-gray-500 mb-4">You haven&apos;t uploaded any habitat images yet.</p>
               <Link
                 href="/habitats"
                 className="px-5 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function SearchHabitatComponent({ context = 'habitats' }) {
@@ -110,10 +110,10 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     } else if (savedSort) {
       setSelectedSort(savedSort);
     }
-  }, []);
+  }, [availableFields, context, currentField, currentMonth, currentSort, currentYear]);
   
   // Function to fetch autocomplete suggestions
-  const fetchSuggestions = async (text) => {
+  const fetchSuggestions = useCallback(async (text) => {
     if (!text || text.length < 2) {
       setSuggestions([]);
       return;
@@ -144,7 +144,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedField, context]);
 
   // Add click outside handler
   useEffect(() => {
@@ -176,7 +176,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     return () => {
       clearTimeout(debounceTimer);
     };
-  }, [searchText, selectedField, context]);
+  }, [searchText, selectedField, context, fetchSuggestions]);
   
   // Handle changes to the search input
   const handleSearchChange = (e) => {
@@ -205,8 +205,9 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     setSelectedField(newField);
     setSuggestions([]);
     localStorage.setItem(`${context}_searchField`, newField);
-    // Reset search text when field changes
+    // Reset search text when field changes and update URL
     setSearchText('');
+    updateSearchUrl('', newField, selectedMonth, selectedYear, selectedSort);
   };
   
   // Handle month filter change

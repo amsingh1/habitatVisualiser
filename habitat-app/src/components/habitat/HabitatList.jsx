@@ -346,7 +346,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
 
       {/* Habitat grid */}
       {!isLoading && !error && habitats.length > 0 && (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
     {habitats.map((habitat) => (
       <div
         key={habitat._id}
@@ -354,7 +354,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
       >
         {/* Show just the first image prominent in the card */}
         <div 
-          className="relative h-48 w-full overflow-hidden"
+          className="relative w-full aspect-square overflow-hidden"
           onClick={() => isSelectionMode ? toggleHabitatSelection(habitat) : openDetails(habitat)}
         >
           {habitat.imageUrl && habitat.imageUrl.length > 0 && (
@@ -608,7 +608,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
         title="Delete Vegetation Type"
         message={habitatToDelete ? (
           <>
-            Are you sure you want to delete <strong>"{habitatToDelete.habitatName}"</strong>? This action cannot be undone and will permanently remove all associated images and data.
+            Are you sure you want to delete <strong>&quot;{habitatToDelete.habitatName}&quot;</strong>? This action cannot be undone and will permanently remove all associated images and data.
           </>
         ) : ''}
         confirmText="Delete"
