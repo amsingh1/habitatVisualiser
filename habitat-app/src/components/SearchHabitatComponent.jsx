@@ -317,9 +317,12 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     setSelectedMonth(newMonth);
     localStorage.setItem(`${context}_monthFilter`, newMonth);
     
-    // Preserve advanced criteria if in advanced mode
+    // Preserve advanced criteria if in advanced mode AND has values
     if (isAdvancedMode) {
-      updateSearchUrl('', '', newMonth, selectedYear, selectedSort, advancedCriteria);
+      const hasValues = Object.entries(advancedCriteria)
+        .filter(([key, value]) => value !== null)
+        .some(([key, value]) => value && value.trim() !== '');
+      updateSearchUrl('', '', newMonth, selectedYear, selectedSort, hasValues ? advancedCriteria : null);
     } else {
       updateSearchUrl(searchText, selectedField, newMonth, selectedYear, selectedSort);
     }
@@ -331,9 +334,12 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     setSelectedYear(newYear);
     localStorage.setItem(`${context}_yearFilter`, newYear);
     
-    // Preserve advanced criteria if in advanced mode
+    // Preserve advanced criteria if in advanced mode AND has values
     if (isAdvancedMode) {
-      updateSearchUrl('', '', selectedMonth, newYear, selectedSort, advancedCriteria);
+      const hasValues = Object.entries(advancedCriteria)
+        .filter(([key, value]) => value !== null)
+        .some(([key, value]) => value && value.trim() !== '');
+      updateSearchUrl('', '', selectedMonth, newYear, selectedSort, hasValues ? advancedCriteria : null);
     } else {
       updateSearchUrl(searchText, selectedField, selectedMonth, newYear, selectedSort);
     }
@@ -345,9 +351,12 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     setSelectedSort(newSort);
     localStorage.setItem(`${context}_sortPreference`, newSort);
     
-    // Preserve advanced criteria if in advanced mode
+    // Preserve advanced criteria if in advanced mode AND has values
     if (isAdvancedMode) {
-      updateSearchUrl('', '', selectedMonth, selectedYear, newSort, advancedCriteria);
+      const hasValues = Object.entries(advancedCriteria)
+        .filter(([key, value]) => value !== null)
+        .some(([key, value]) => value && value.trim() !== '');
+      updateSearchUrl('', '', selectedMonth, selectedYear, newSort, hasValues ? advancedCriteria : null);
     } else {
       updateSearchUrl(searchText, selectedField, selectedMonth, selectedYear, newSort);
     }
@@ -514,17 +523,16 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     setActiveSuggestionField(null);
     setAdvancedSuggestions({});
     
-    // Build clean URL without any criteria
+    // Also reset month, year, and sort to defaults
+    setSelectedMonth('all');
+    setSelectedYear('all');
+    setSelectedSort('upload_desc');
+    localStorage.setItem(`${context}_monthFilter`, 'all');
+    localStorage.setItem(`${context}_yearFilter`, 'all');
+    localStorage.setItem(`${context}_sortPreference`, 'upload_desc');
+    
+    // Build clean URL without any criteria or filters
     const searchParams = new URLSearchParams();
-    if (selectedMonth && selectedMonth !== 'all') {
-      searchParams.set('monthFilter', selectedMonth);
-    }
-    if (selectedYear && selectedYear !== 'all') {
-      searchParams.set('yearFilter', selectedYear);
-    }
-    if (selectedSort && selectedSort !== 'upload_desc') {
-      searchParams.set('sortBy', selectedSort);
-    }
     if (context !== 'habitats') {
       searchParams.set('context', context);
     }
