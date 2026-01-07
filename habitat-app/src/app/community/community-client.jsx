@@ -95,8 +95,8 @@ export default function CommunityClient() {
         />
       </div>
 
-      {/* Two Column Layout for Monthly and Yearly Leaderboards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+      {/* Three Column Layout for Monthly, Yearly, and All-Time Leaderboards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
         {/* Most Uploads This Month */}
         <div>
           <LeaderboardSection
@@ -112,6 +112,16 @@ export default function CommunityClient() {
           <LeaderboardSection
             title={`Most uploads in ${leaderboards.currentYear}`}
             users={leaderboards.mostUploadsThisYear}
+            showTimestamp={false}
+            layoutType="list"
+          />
+        </div>
+
+        {/* Most Uploads All Time */}
+        <div>
+          <LeaderboardSection
+            title="Most uploads (all times)"
+            users={leaderboards.mostUploadsAllTime}
             showTimestamp={false}
             layoutType="list"
           />

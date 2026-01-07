@@ -314,7 +314,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                 type="text"
                 value={searchText}
                 onChange={handleSearchChange}
-                placeholder={`Search by ${availableFields.find(f => f.id === selectedField)?.label || 'field'}...`}
+                placeholder={`Search by ${availableFields.find(f => f.id === selectedField)?.label == 'Group' ? 'Vegetation Type' : availableFields.find(f => f.id === selectedField)?.label || 'field'}...`}
                 className="flex-1 h-10 px-4 py-2 text-gray-700 focus:outline-none"
               />
               

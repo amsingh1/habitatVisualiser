@@ -148,10 +148,43 @@ export async function GET(req) {
       uploadCount: item.uploadCount
     }));
 
+    // Most uploads all time
+    const mostUploadsAllTime = await Habitat.aggregate([
+      {
+        $group: {
+          _id: '$user',
+          uploadCount: { $sum: 1 },
+          userName: { $first: '$userName' },
+          userEmail: { $first: '$userEmail' }
+        }
+      },
+      {
+        $sort: { uploadCount: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]);
+
+    const allTimeUserIds = mostUploadsAllTime.map(u => u._id).filter(id => mongoose.Types.ObjectId.isValid(id));
+    const allTimeUsers = await User.find({ _id: { $in: allTimeUserIds } }).select('_id name image');
+    const allTimeUserMap = allTimeUsers.reduce((acc, user) => {
+      acc[user._id.toString()] = user;
+      return acc;
+    }, {});
+
+    const mostUploadsAllTimeFormatted = mostUploadsAllTime.map(item => ({
+      userId: item._id,
+      userName: allTimeUserMap[item._id]?.name || item.userName,
+      userImage: allTimeUserMap[item._id]?.image || null,
+      uploadCount: item.uploadCount
+    }));
+
     return NextResponse.json({
       recentlyActive: recentlyActiveFormatted,
       mostUploadsThisMonth: mostUploadsThisMonthFormatted,
       mostUploadsThisYear: mostUploadsThisYearFormatted,
+      mostUploadsAllTime: mostUploadsAllTimeFormatted,
       currentMonth: now.toLocaleString('default', { month: 'long' }),
       currentYear: currentYear
     });

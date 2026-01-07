@@ -54,7 +54,7 @@ export default function AuthNavBar() {
       <div className="w-full py-3 flex items-center justify-between border-b border-indigo-500 lg:border-none">
   {/* Logo - positioned completely left */}
   <Link href="/" className="text-white text-xl font-bold">
-    Vegetation types
+    Vegetation Types
   </Link>
   
   {/* Right side container for all other elements */}
