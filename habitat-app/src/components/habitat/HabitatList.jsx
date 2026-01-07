@@ -32,18 +32,25 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
   const monthFilter = searchParams.get('monthFilter') || '';
   const yearFilter = searchParams.get('yearFilter') || '';
   const sortBy = searchParams.get('sortBy') || '';
+  const criteriaParam = searchParams.get('criteria') || '';
   
-  // Determine if a search is being performed
-  const isSearching = searchText !== '';
+  // Determine if a search is being performed (either simple or advanced)
+  const isSearching = searchText !== '' || criteriaParam !== '';
   
-  // Determine the API endpoint based on dataType and search parameters
-  const getApiEndpoint = () => {
+  // Memoize the API endpoint to ensure SWR revalidates when it changes
+  const apiEndpoint = useMemo(() => {
     const params = new URLSearchParams();
     
     // If searching, use search endpoint
     if (isSearching) {
-      params.set('q', searchText);
-      params.set('field', searchField);
+      if (criteriaParam) {
+        // Advanced search mode
+        params.set('criteria', criteriaParam);
+      } else {
+        // Simple search mode
+        params.set('q', searchText);
+        params.set('field', searchField);
+      }
       params.set('context', dataType);
     }
     
@@ -70,10 +77,10 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
     
     const queryString = params.toString();
     return queryString ? `${baseEndpoint}?${queryString}` : baseEndpoint;
-  };
+  }, [searchText, searchField, dataType, monthFilter, yearFilter, sortBy, criteriaParam, isSearching]);
   
   // Use SWR to fetch and keep habitats data up-to-date
-  const { data, error, isLoading, mutate } = useSWR(getApiEndpoint(), fetcher);
+  const { data, error, isLoading, mutate } = useSWR(apiEndpoint, fetcher);
   
   // Extract habitats from data
   const habitats = useMemo(() => data?.habitats || [], [data?.habitats]);

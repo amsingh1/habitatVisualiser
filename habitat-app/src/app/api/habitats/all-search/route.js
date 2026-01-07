@@ -24,6 +24,7 @@ export async function GET(req) {
     const monthFilter = searchParams.get('monthFilter');
     const yearFilter = searchParams.get('yearFilter');
     const sortBy = searchParams.get('sortBy') || 'upload_desc';
+    const criteriaParam = searchParams.get('criteria');
     
     if (searchField === 'group') {
       searchField = 'habitatName'; // Default to habitatName for group
@@ -45,8 +46,47 @@ export async function GET(req) {
       }
     }
     
-    // If search text is provided, add text search condition
-    if (searchText.trim()) {
+    // Check if advanced search criteria is provided
+    if (criteriaParam) {
+      try {
+        const criteria = JSON.parse(decodeURIComponent(criteriaParam));
+        
+        // Add conditions for each non-empty field in criteria
+        if (criteria.habitatName && criteria.habitatName.trim()) {
+          andConditions.push({
+            habitatName: { $regex: criteria.habitatName.trim(), $options: 'i' }
+          });
+        }
+        
+        if (criteria.country && criteria.country.trim()) {
+          andConditions.push({
+            country: { $regex: criteria.country.trim(), $options: 'i' }
+          });
+        }
+        
+        if (criteria.state && criteria.state.trim()) {
+          andConditions.push({
+            state: { $regex: criteria.state.trim(), $options: 'i' }
+          });
+        }
+        
+        if (criteria.group && criteria.group.trim()) {
+          // For group, search by habitatName (group searches vegetation types with similar EVC codes)
+          andConditions.push({
+            habitatName: { $regex: criteria.group.trim(), $options: 'i' }
+          });
+        }
+        
+        if (criteria.userName && criteria.userName.trim()) {
+          andConditions.push({
+            userName: { $regex: criteria.userName.trim(), $options: 'i' }
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing criteria:', error);
+      }
+    } else if (searchText.trim()) {
+      // Simple search mode - If search text is provided, add text search condition
       // Create search condition for the selected field - using exact match (case insensitive)
       andConditions.push({
         [searchField]: { $regex: `^${searchText}$`, $options: 'i' }

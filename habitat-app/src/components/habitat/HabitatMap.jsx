@@ -26,31 +26,63 @@ export default function HabitatMap({ dataType='habitats' }) {
   const searchText = searchParams.get('q') || '';
   const searchField = searchParams.get('field') || 'habitatName'; // Default to habitatName
   const searchContext = searchParams.get('context') || dataType;
+  const criteriaParam = searchParams.get('criteria') || '';
+  const monthFilter = searchParams.get('monthFilter') || '';
+  const yearFilter = searchParams.get('yearFilter') || '';
+  const sortBy = searchParams.get('sortBy') || '';
   
-  // Determine if a search is being performed
-  const isSearching = searchText !== '';
+  // Determine if a search is being performed (either simple or advanced)
+  const isSearching = searchText !== '' || criteriaParam !== '';
   
-  // Determine the API endpoint based on dataType and search parameters
-  const getApiEndpoint = () => {
+  // Memoize the API endpoint to ensure SWR revalidates when it changes
+  const apiEndpoint = useMemo(() => {
+    const params = new URLSearchParams();
+    
     // If searching, use search endpoint
     if (isSearching) {
-      const queryString = new URLSearchParams({
-        q: searchText,
-        field: searchField,
-        context: dataType
-      }).toString();
-      return `/api/habitats/all-search?${queryString}`;
+      if (criteriaParam) {
+        // Advanced search mode
+        params.set('criteria', criteriaParam);
+      } else {
+        // Simple search mode
+        params.set('q', searchText);
+        params.set('field', searchField);
+      }
+      params.set('context', dataType);
+      
+      // Add filters for search endpoint
+      if (monthFilter && monthFilter !== 'all') {
+        params.set('monthFilter', monthFilter);
+      }
+      if (yearFilter && yearFilter !== 'all') {
+        params.set('yearFilter', yearFilter);
+      }
+      if (sortBy && sortBy !== 'upload_desc') {
+        params.set('sortBy', sortBy);
+      }
+      
+      return `/api/habitats/all-search?${params.toString()}`;
     } 
     
     // Otherwise use standard endpoints based on dataType
-    return dataType === 'personal' 
-      ? `/api/habitats/my` 
-      : '/api/habitats';
-  };
+    // Add filters for standard endpoints too
+    if (monthFilter && monthFilter !== 'all') {
+      params.set('monthFilter', monthFilter);
+    }
+    if (yearFilter && yearFilter !== 'all') {
+      params.set('yearFilter', yearFilter);
+    }
+    if (sortBy && sortBy !== 'upload_desc') {
+      params.set('sortBy', sortBy);
+    }
+    
+    const baseEndpoint = dataType === 'personal' ? '/api/habitats/my' : '/api/habitats';
+    const queryString = params.toString();
+    return queryString ? `${baseEndpoint}?${queryString}` : baseEndpoint;
+  }, [searchText, searchField, dataType, criteriaParam, isSearching, monthFilter, yearFilter, sortBy]);
   
   // Use SWR to fetch and keep habitats data up-to-date
- 
-  const { data, error, isLoading, mutate } = useSWR(getApiEndpoint(), fetcher, {
+  const { data, error, isLoading, mutate } = useSWR(apiEndpoint, fetcher, {
     revalidateOnMount: true, // Revalidate when component mounts
   });
 

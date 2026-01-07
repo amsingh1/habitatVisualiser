@@ -22,6 +22,7 @@ export async function GET(req) {
     const monthFilter = searchParams.get('monthFilter');
     const yearFilter = searchParams.get('yearFilter');
     const sortBy = searchParams.get('sortBy') || 'upload_desc';
+    const criteriaParam = searchParams.get('criteria');
     
     // Identify the user (first try with id, then email if id is not available)
     const userId = session.user.id;
@@ -29,11 +30,53 @@ export async function GET(req) {
     
     // Build query for user's habitats
     let query = {};
+    let andConditions = [];
     
+    // Always filter by user
     if (userId) {
-      query.user = userId;
+      andConditions.push({ user: userId });
     } else {
-      query.userEmail = userEmail;
+      andConditions.push({ userEmail: userEmail });
+    }
+    
+    // Check if advanced search criteria is provided
+    if (criteriaParam) {
+      try {
+        const criteria = JSON.parse(decodeURIComponent(criteriaParam));
+        
+        // Add conditions for each non-empty field in criteria
+        if (criteria.habitatName && criteria.habitatName.trim()) {
+          andConditions.push({
+            habitatName: { $regex: criteria.habitatName.trim(), $options: 'i' }
+          });
+        }
+        
+        if (criteria.country && criteria.country.trim()) {
+          andConditions.push({
+            country: { $regex: criteria.country.trim(), $options: 'i' }
+          });
+        }
+        
+        if (criteria.state && criteria.state.trim()) {
+          andConditions.push({
+            state: { $regex: criteria.state.trim(), $options: 'i' }
+          });
+        }
+        
+        if (criteria.group && criteria.group.trim()) {
+          // For group, search by habitatName
+          andConditions.push({
+            habitatName: { $regex: criteria.group.trim(), $options: 'i' }
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing criteria:', error);
+      }
+    }
+    
+    // Combine AND conditions
+    if (andConditions.length > 0) {
+      query.$and = andConditions;
     }
     
     // Month filter (based on createdAt)
