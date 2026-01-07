@@ -22,7 +22,14 @@ export async function GET(req) {
     const monthFilter = searchParams.get('monthFilter');
     const yearFilter = searchParams.get('yearFilter');
     const sortBy = searchParams.get('sortBy') || 'upload_desc';
-    const criteriaParam = searchParams.get('criteria');
+    
+    // Get individual advanced search parameters
+    const advancedHabitatName = searchParams.get('habitatName');
+    const advancedCountry = searchParams.get('country');
+    const advancedState = searchParams.get('state');
+    const advancedGroup = searchParams.get('group');
+    
+    const hasAdvancedSearch = advancedHabitatName || advancedCountry || advancedState || advancedGroup;
     
     // Identify the user (first try with id, then email if id is not available)
     const userId = session.user.id;
@@ -40,37 +47,31 @@ export async function GET(req) {
     }
     
     // Check if advanced search criteria is provided
-    if (criteriaParam) {
-      try {
-        const criteria = JSON.parse(decodeURIComponent(criteriaParam));
-        
-        // Add conditions for each non-empty field in criteria
-        if (criteria.habitatName && criteria.habitatName.trim()) {
-          andConditions.push({
-            habitatName: { $regex: criteria.habitatName.trim(), $options: 'i' }
-          });
-        }
-        
-        if (criteria.country && criteria.country.trim()) {
-          andConditions.push({
-            country: { $regex: criteria.country.trim(), $options: 'i' }
-          });
-        }
-        
-        if (criteria.state && criteria.state.trim()) {
-          andConditions.push({
-            state: { $regex: criteria.state.trim(), $options: 'i' }
-          });
-        }
-        
-        if (criteria.group && criteria.group.trim()) {
-          // For group, search by habitatName
-          andConditions.push({
-            habitatName: { $regex: criteria.group.trim(), $options: 'i' }
-          });
-        }
-      } catch (error) {
-        console.error('Error parsing criteria:', error);
+    if (hasAdvancedSearch) {
+      // Add conditions for each non-empty field
+      if (advancedHabitatName && advancedHabitatName.trim()) {
+        andConditions.push({
+          habitatName: { $regex: advancedHabitatName.trim(), $options: 'i' }
+        });
+      }
+      
+      if (advancedCountry && advancedCountry.trim()) {
+        andConditions.push({
+          country: { $regex: advancedCountry.trim(), $options: 'i' }
+        });
+      }
+      
+      if (advancedState && advancedState.trim()) {
+        andConditions.push({
+          state: { $regex: advancedState.trim(), $options: 'i' }
+        });
+      }
+      
+      if (advancedGroup && advancedGroup.trim()) {
+        // For group, search by habitatName
+        andConditions.push({
+          habitatName: { $regex: advancedGroup.trim(), $options: 'i' }
+        });
       }
     }
     

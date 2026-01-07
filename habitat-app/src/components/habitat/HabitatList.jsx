@@ -32,10 +32,18 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
   const monthFilter = searchParams.get('monthFilter') || '';
   const yearFilter = searchParams.get('yearFilter') || '';
   const sortBy = searchParams.get('sortBy') || '';
-  const criteriaParam = searchParams.get('criteria') || '';
+  
+  // Get individual advanced search parameters
+  const advancedHabitatName = searchParams.get('habitatName') || '';
+  const advancedCountry = searchParams.get('country') || '';
+  const advancedState = searchParams.get('state') || '';
+  const advancedGroup = searchParams.get('group') || '';
+  const advancedUserName = searchParams.get('userName') || '';
+  
+  const hasAdvancedSearch = advancedHabitatName || advancedCountry || advancedState || advancedGroup || advancedUserName;
   
   // Determine if a search is being performed (either simple or advanced)
-  const isSearching = searchText !== '' || criteriaParam !== '';
+  const isSearching = searchText !== '' || hasAdvancedSearch;
   
   // Memoize the API endpoint to ensure SWR revalidates when it changes
   const apiEndpoint = useMemo(() => {
@@ -43,9 +51,13 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
     
     // If searching, use search endpoint
     if (isSearching) {
-      if (criteriaParam) {
-        // Advanced search mode
-        params.set('criteria', criteriaParam);
+      if (hasAdvancedSearch) {
+        // Advanced search mode - add individual parameters
+        if (advancedHabitatName) params.set('habitatName', advancedHabitatName);
+        if (advancedCountry) params.set('country', advancedCountry);
+        if (advancedState) params.set('state', advancedState);
+        if (advancedGroup) params.set('group', advancedGroup);
+        if (advancedUserName) params.set('userName', advancedUserName);
       } else {
         // Simple search mode
         params.set('q', searchText);
@@ -77,7 +89,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
     
     const queryString = params.toString();
     return queryString ? `${baseEndpoint}?${queryString}` : baseEndpoint;
-  }, [searchText, searchField, dataType, monthFilter, yearFilter, sortBy, criteriaParam, isSearching]);
+  }, [searchText, searchField, dataType, monthFilter, yearFilter, sortBy, hasAdvancedSearch, advancedHabitatName, advancedCountry, advancedState, advancedGroup, advancedUserName, isSearching]);
   
   // Use SWR to fetch and keep habitats data up-to-date
   const { data, error, isLoading, mutate } = useSWR(apiEndpoint, fetcher);

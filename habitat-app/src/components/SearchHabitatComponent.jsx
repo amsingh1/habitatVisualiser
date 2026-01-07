@@ -14,9 +14,13 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   const currentYear = searchParams.get('yearFilter') || 'all';
   const currentSort = searchParams.get('sortBy') || 'upload_desc';
   
-  // Get advanced search criteria from URL (if any)
-  const advancedCriteriaParam = searchParams.get('criteria');
-  const initialAdvancedMode = advancedCriteriaParam ? true : false;
+  // Get advanced search criteria from URL (check if any advanced params exist)
+  const hasAdvancedParams = searchParams.has('habitatName') || 
+                           searchParams.has('country') || 
+                           searchParams.has('state') || 
+                           searchParams.has('group') || 
+                           searchParams.has('userName');
+  const initialAdvancedMode = hasAdvancedParams;
   
   // Available search fields
   const allFields = [
@@ -92,15 +96,16 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   
   // Initialize advanced criteria from URL if available
   useEffect(() => {
-    if (advancedCriteriaParam) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(advancedCriteriaParam));
-        setAdvancedCriteria(parsed);
-      } catch (e) {
-        console.error('Failed to parse advanced criteria:', e);
-      }
+    if (hasAdvancedParams) {
+      setAdvancedCriteria({
+        habitatName: searchParams.get('habitatName') || '',
+        country: searchParams.get('country') || '',
+        state: searchParams.get('state') || '',
+        group: searchParams.get('group') || '',
+        userName: context === 'habitats' ? (searchParams.get('userName') || '') : null,
+      });
     }
-  }, [advancedCriteriaParam]);
+  }, [hasAdvancedParams, searchParams, context]);
   
   // Initialize selected field, filters, and sort from URL or localStorage
   useEffect(() => {
@@ -311,7 +316,13 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     const newMonth = e.target.value;
     setSelectedMonth(newMonth);
     localStorage.setItem(`${context}_monthFilter`, newMonth);
-    updateSearchUrl(searchText, selectedField, newMonth, selectedYear, selectedSort);
+    
+    // Preserve advanced criteria if in advanced mode
+    if (isAdvancedMode) {
+      updateSearchUrl('', '', newMonth, selectedYear, selectedSort, advancedCriteria);
+    } else {
+      updateSearchUrl(searchText, selectedField, newMonth, selectedYear, selectedSort);
+    }
   };
   
   // Handle year filter change
@@ -319,7 +330,13 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     const newYear = e.target.value;
     setSelectedYear(newYear);
     localStorage.setItem(`${context}_yearFilter`, newYear);
-    updateSearchUrl(searchText, selectedField, selectedMonth, newYear, selectedSort);
+    
+    // Preserve advanced criteria if in advanced mode
+    if (isAdvancedMode) {
+      updateSearchUrl('', '', selectedMonth, newYear, selectedSort, advancedCriteria);
+    } else {
+      updateSearchUrl(searchText, selectedField, selectedMonth, newYear, selectedSort);
+    }
   };
   
   // Handle sort change
@@ -327,7 +344,13 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     const newSort = e.target.value;
     setSelectedSort(newSort);
     localStorage.setItem(`${context}_sortPreference`, newSort);
-    updateSearchUrl(searchText, selectedField, selectedMonth, selectedYear, newSort);
+    
+    // Preserve advanced criteria if in advanced mode
+    if (isAdvancedMode) {
+      updateSearchUrl('', '', selectedMonth, selectedYear, newSort, advancedCriteria);
+    } else {
+      updateSearchUrl(searchText, selectedField, selectedMonth, selectedYear, newSort);
+    }
   };
   
   // Update URL with search parameters
@@ -335,12 +358,23 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     // Create a new URLSearchParams object
     const params = new URLSearchParams();
     
-    // For advanced mode, encode criteria object (only if it has values)
+    // For advanced mode, add individual parameters for each field
     if (criteria !== null) {
-      // Check if criteria has any non-empty values
-      const hasValues = Object.values(criteria).some(value => value && value.trim() !== '');
-      if (hasValues) {
-        params.set('criteria', encodeURIComponent(JSON.stringify(criteria)));
+      // Add each non-empty criteria field as a separate parameter
+      if (criteria.habitatName && criteria.habitatName.trim()) {
+        params.set('habitatName', criteria.habitatName.trim());
+      }
+      if (criteria.country && criteria.country.trim()) {
+        params.set('country', criteria.country.trim());
+      }
+      if (criteria.state && criteria.state.trim()) {
+        params.set('state', criteria.state.trim());
+      }
+      if (criteria.group && criteria.group.trim()) {
+        params.set('group', criteria.group.trim());
+      }
+      if (criteria.userName && criteria.userName.trim()) {
+        params.set('userName', criteria.userName.trim());
       }
     } else if (text) {
       // For simple mode with text, add search parameters
