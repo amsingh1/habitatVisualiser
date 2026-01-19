@@ -80,20 +80,26 @@ export async function GET(req) {
       query.$and = andConditions;
     }
     
-    // Month filter (based on createdAt)
+    // Month filter (based on observation date)
     if (monthFilter && monthFilter !== 'all') {
       const month = parseInt(monthFilter);
-      query.$expr = query.$expr || {};
-      query.$expr.$and = query.$expr.$and || [];
-      query.$expr.$and.push({ $eq: [{ $month: '$createdAt' }, month] });
+      if (!query.$and) {
+        query.$and = [];
+      }
+      query.$and.push({
+        $expr: { $eq: [{ $month: '$date' }, month] }
+      });
     }
     
-    // Year filter (based on createdAt)
+    // Year filter (based on observation date)
     if (yearFilter && yearFilter !== 'all') {
       const year = parseInt(yearFilter);
-      query.$expr = query.$expr || {};
-      query.$expr.$and = query.$expr.$and || [];
-      query.$expr.$and.push({ $eq: [{ $year: '$createdAt' }, year] });
+      if (!query.$and) {
+        query.$and = [];
+      }
+      query.$and.push({
+        $expr: { $eq: [{ $year: '$date' }, year] }
+      });
     }
     
     // Determine sort option
