@@ -32,6 +32,7 @@ export default function HabitatUpload() {
   const [exifData, setExifData] = useState(null);
   const [useExifData, setUseExifData] = useState(true);
   const [isLoadingExif, setIsLoadingExif] = useState(false);
+  const [isGeocodingLocation, setIsGeocodingLocation] = useState(false);
   
   // Form state
   const [habitatName, setHabitatName] = useState('');
@@ -235,6 +236,76 @@ export default function HabitatUpload() {
     const debounceTimer = setTimeout(searchEuVegUnits, 300);
     return () => clearTimeout(debounceTimer);
   }, [habitatName]);
+
+  // Reverse geocode coordinates to get location info
+  useEffect(() => {
+    const reverseGeocode = async () => {
+      // Only proceed if we have valid coordinates
+      const lat = parseFloat(latitude);
+      const lng = parseFloat(longitude);
+      
+      if (!latitude || !longitude || isNaN(lat) || isNaN(lng)) {
+        return;
+      }
+      
+      // Validate coordinate ranges
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return;
+      }
+      
+      setIsGeocodingLocation(true);
+      
+      try {
+        // Use OpenStreetMap Nominatim for reverse geocoding (free, no API key needed)
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
+          {
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'HabitatVisualiser/1.0' // Nominatim requires a User-Agent
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error('Geocoding failed');
+        }
+        
+        const data = await response.json();
+        
+        // Extract state and country from the response
+        if (data.address) {
+          // Get state/region (try different field names as they vary by country)
+          const stateValue = data.address.state || 
+                           data.address.region || 
+                           data.address.province || 
+                           data.address.county ||
+                           '';
+          
+          // Get country
+          const countryValue = data.address.country || '';
+          
+          // Update state and country whenever coordinates change
+          if (stateValue) {
+            setState(stateValue);
+          }
+          
+          if (countryValue) {
+            setCountry(countryValue);
+          }
+        }
+      } catch (error) {
+        console.error('Error reverse geocoding:', error);
+        // Fail silently - don't disrupt the user experience
+      } finally {
+        setIsGeocodingLocation(false);
+      }
+    };
+    
+    // Debounce the geocoding to avoid too many API calls
+    const debounceTimer = setTimeout(reverseGeocode, 800);
+    return () => clearTimeout(debounceTimer);
+  }, [latitude, longitude]); // Only depend on coordinates, not state/country to avoid loops
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -687,6 +758,11 @@ export default function HabitatUpload() {
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             GPS Coordinates
+            {isGeocodingLocation && (
+              <span className="ml-2 text-xs text-indigo-600">
+                (Looking up location...)
+              </span>
+            )}
           </label>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -780,6 +856,7 @@ export default function HabitatUpload() {
           {showMap && (
             <div className="border border-gray-300 rounded-md mt-2 overflow-hidden" style={{ height: '400px' }}>
               <MapSelector 
+                key={`${latitude},${longitude}`}
                 currentCoordinate={latitude && longitude ? `${latitude},${longitude}` : ''} 
                 onSelectCoordinate={(value, stateValue, countryValue) => {
                   const coords = value.split(',');
