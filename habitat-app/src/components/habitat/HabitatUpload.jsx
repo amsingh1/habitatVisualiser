@@ -879,7 +879,7 @@ export default function HabitatUpload() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="state" className="block text-xs text-gray-600 mb-1">
-                State/Region
+                State/Region, Municipality, Site name
               </label>
               <input
                 type="text"
