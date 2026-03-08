@@ -59,6 +59,18 @@ const HabitatSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    vegClass: {
+      type: String,
+      default: '',
+    },
+    vegOrder: {
+      type: String,
+      default: '',
+    },
+    vegAlliance: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

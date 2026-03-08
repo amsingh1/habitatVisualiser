@@ -2,9 +2,17 @@ import { NextResponse } from 'next/server';
 import EuVegUnits from '@/models/eu_veg_units';
 import mongoose from 'mongoose';
 
+// Code pattern filters for each vegetation hierarchy level
+const CODE_PATTERNS = {
+  class:    /^[A-Z]{2}$/,
+  order:    /^[A-Z]{2}\d{2}$/,
+  alliance: /^[A-Z]{2}\d{2}[A-Z]$/,
+};
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('query');
+  const type  = searchParams.get('type'); // 'class' | 'order' | 'alliance'
 
   if (!query || query.trim().length < 2) {
     return NextResponse.json(
@@ -24,11 +32,14 @@ export async function GET(request) {
       await mongoose.connect(MONGODB_URI);
     }
     
-    // Create regex query
-    const regexQuery = { name_without_authority: { $regex: query, $options: 'i' } };
+    // Build query: filter by name and, when type is given, by code pattern
+    const dbQuery = { name_without_authority: { $regex: query, $options: 'i' } };
+    if (type && CODE_PATTERNS[type]) {
+      dbQuery.code = { $regex: CODE_PATTERNS[type].source };
+    }
     
     // Find units matching the query
-    const units = await EuVegUnits.find(regexQuery)
+    const units = await EuVegUnits.find(dbQuery)
       .select('_id code EVC_code name_without_authority')
       .limit(10)
       .sort({ code: 1 });

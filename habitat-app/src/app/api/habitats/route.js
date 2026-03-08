@@ -28,8 +28,8 @@ export async function POST(req) {
     console.log("Connected to database");
     
     // Extract data
-    const { habitatName, state, country, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate, code, 
-            evcCode} = data;
+    const { habitatName, state, country, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate,
+            vegClass, vegOrder, vegAlliance } = data;
     
     // Validate that either state+country or location is provided
     if ((!state || !country)) {
@@ -42,12 +42,10 @@ export async function POST(req) {
     // Log session user structure to understand what's available
     console.log("Session user:", session.user);
     
-  
-    
     // Prepare data for saving
     const habitatData = {
       gpsCoordinate,
-      habitatName,
+      habitatName: vegClass || habitatName || '',
       state,
       country,
       date: date || new Date(),
@@ -56,12 +54,12 @@ export async function POST(req) {
       dominantSpecies2,
       dominantSpecies3,
       imageUrl,
-      user: session.user.id, // Add this line to include the user ID
+      user: session.user.id,
       userName: session.user.name || 'Unknown',
       userEmail: session.user.email,
-      code: code || '',
-      EVC_code: evcCode || '',
-
+      vegClass: vegClass || '',
+      vegOrder: vegOrder || '',
+      vegAlliance: vegAlliance || '',
     };
     
     console.log("Habitat data to save:", habitatData);
@@ -305,7 +303,8 @@ export async function PUT(req) {
     console.log("Connected to database");
     
     // Extract habitat ID and updated data
-    const { habitatId, habitatName, state, country, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate } = data;
+    const { habitatId, habitatName, state, country, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate,
+            vegClass, vegOrder, vegAlliance } = data;
     
     if (!habitatId) {
       return NextResponse.json(
@@ -333,8 +332,9 @@ export async function PUT(req) {
     }
     
     // Prepare data for updating
+    const resolvedVegClass = vegClass !== undefined ? vegClass : existingHabitat.vegClass;
     const updateData = {
-      habitatName: habitatName !== undefined ? habitatName : existingHabitat.habitatName,
+      habitatName: resolvedVegClass || (habitatName !== undefined ? habitatName : existingHabitat.habitatName),
       state: state !== undefined ? state : existingHabitat.state,
       country: country !== undefined ? country : existingHabitat.country,
       date: date !== undefined ? date : existingHabitat.date,
@@ -344,7 +344,9 @@ export async function PUT(req) {
       dominantSpecies3: dominantSpecies3 !== undefined ? dominantSpecies3 : existingHabitat.dominantSpecies3,
       imageUrl: imageUrl !== undefined ? imageUrl : existingHabitat.imageUrl,
       gpsCoordinate: gpsCoordinate !== undefined ? gpsCoordinate : existingHabitat.gpsCoordinate,
-      // We don't update user-related fields as they should remain the same
+      vegClass: vegClass !== undefined ? vegClass : existingHabitat.vegClass,
+      vegOrder: vegOrder !== undefined ? vegOrder : existingHabitat.vegOrder,
+      vegAlliance: vegAlliance !== undefined ? vegAlliance : existingHabitat.vegAlliance,
     };
     
     console.log("Habitat data to update:", updateData);

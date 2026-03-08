@@ -18,7 +18,6 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   const hasAdvancedParams = searchParams.has('habitatName') || 
                            searchParams.has('country') || 
                            searchParams.has('state') || 
-                           searchParams.has('group') || 
                            searchParams.has('userName');
   const initialAdvancedMode = hasAdvancedParams;
   
@@ -28,7 +27,6 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     { id: 'state', label: 'State/Region', enabledIn: ['habitats', 'personal'] },
     { id: 'country', label: 'Country', enabledIn: ['habitats', 'personal'] },
     { id: 'userName', label: 'User Name', enabledIn: ['habitats'] },
-    { id: 'group', label: 'Group', enabledIn: ['habitats', 'personal'] },
   ];
   
   // Determine which fields to show based on context
@@ -87,7 +85,6 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     habitatName: '',
     country: '',
     state: '',
-    group: '',
     userName: context === 'habitats' ? '' : null,
   });
   const [activeSuggestionField, setActiveSuggestionField] = useState(null);
@@ -101,7 +98,6 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
         habitatName: searchParams.get('habitatName') || '',
         country: searchParams.get('country') || '',
         state: searchParams.get('state') || '',
-        group: searchParams.get('group') || '',
         userName: context === 'habitats' ? (searchParams.get('userName') || '') : null,
       });
     }
@@ -190,7 +186,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     try {
       const params = new URLSearchParams();
       params.set('q', text);
-      params.set('field', field === 'group' ? 'habitatName' : field);
+      params.set('field', field);
       if (context !== 'habitats') {
         params.set('context', context);
       }
@@ -379,9 +375,6 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
       if (criteria.state && criteria.state.trim()) {
         params.set('state', criteria.state.trim());
       }
-      if (criteria.group && criteria.group.trim()) {
-        params.set('group', criteria.group.trim());
-      }
       if (criteria.userName && criteria.userName.trim()) {
         params.set('userName', criteria.userName.trim());
       }
@@ -493,7 +486,6 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
         habitatName: '',
         country: '',
         state: '',
-        group: '',
         userName: context === 'habitats' ? '' : null,
       });
       setActiveSuggestionField(null);
@@ -516,7 +508,6 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
       habitatName: '',
       country: '',
       state: '',
-      group: '',
       userName: context === 'habitats' ? '' : null,
     };
     setAdvancedCriteria(clearedCriteria);
@@ -581,7 +572,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                     type="text"
                     value={searchText}
                     onChange={handleSearchChange}
-                    placeholder={`Search by ${availableFields.find(f => f.id === selectedField)?.label == 'Group' ? 'Vegetation Type' : availableFields.find(f => f.id === selectedField)?.label || 'field'}...`}
+                    placeholder={`Search by ${availableFields.find(f => f.id === selectedField)?.label || 'field'}...`}
                     className="flex-1 h-10 px-4 py-2 text-gray-700 focus:outline-none"
                   />
                   
@@ -621,15 +612,15 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                                 {suggestion.length > 40 ? `${suggestion.substring(0, 40)}...` : suggestion}
                               </span>
                             ) : (
-                              // For group/habitatName fields with EVC_code
+                              // For habitatName fields with code
                               <div className="flex flex-col">
                                 <span className="font-medium">
                                   {suggestion.habitatName.length > 40 
                                     ? `${suggestion.habitatName.substring(0, 40)}...` 
                                     : suggestion.habitatName}
                                 </span>
-                                {suggestion.EVC_code && (
-                                  <span className="text-sm text-gray-500">Code: {suggestion.EVC_code}</span>
+                                {suggestion.code && (
+                                  <span className="text-sm text-gray-500">Code: {suggestion.code}</span>
                                 )}
                               </div>
                             )}
@@ -705,8 +696,8 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                         ) : (
                           <div className="flex flex-col">
                             <span className="font-medium">{suggestion.habitatName}</span>
-                            {suggestion.EVC_code && (
-                              <span className="text-sm text-gray-500">Code: {suggestion.EVC_code}</span>
+                            {suggestion.code && (
+                              <span className="text-sm text-gray-500">Code: {suggestion.code}</span>
                             )}
                           </div>
                         )}
@@ -788,54 +779,6 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
                       >
                         <span className="font-medium">{suggestion}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-            
-            {/* Group */}
-            <div className="relative">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={advancedCriteria.group}
-                  onChange={(e) => handleAdvancedInputChange('group', e.target.value)}
-                  onFocus={() => setActiveSuggestionField('group')}
-                  placeholder="Group..."
-                  className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                {advancedCriteria.group && (
-                  <button
-                    type="button"
-                    onClick={() => clearAdvancedField('group')}
-                    className="px-3 text-gray-500 hover:text-gray-700"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-              {/* Suggestions for group */}
-              {activeSuggestionField === 'group' && advancedSuggestions.group?.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  <ul>
-                    {advancedSuggestions.group.map((suggestion, index) => (
-                      <li 
-                        key={index}
-                        onClick={() => handleAdvancedSuggestionClick('group', suggestion)}
-                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
-                      >
-                        {typeof suggestion === 'string' ? (
-                          <span className="font-medium">{suggestion}</span>
-                        ) : (
-                          <div className="flex flex-col">
-                            <span className="font-medium">{suggestion.habitatName}</span>
-                            {suggestion.EVC_code && (
-                              <span className="text-sm text-gray-500">Code: {suggestion.EVC_code}</span>
-                            )}
-                          </div>
-                        )}
                       </li>
                     ))}
                   </ul>

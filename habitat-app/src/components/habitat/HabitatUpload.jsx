@@ -26,18 +26,24 @@ export default function HabitatUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
-  const [euVegSuggestions, setEuVegSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+
+  // EU vegetation hierarchy autocomplete state
+  const [classSuggestions, setClassSuggestions] = useState([]);
+  const [showClassSuggestions, setShowClassSuggestions] = useState(false);
+  const [orderSuggestions, setOrderSuggestions] = useState([]);
+  const [showOrderSuggestions, setShowOrderSuggestions] = useState(false);
+  const [allianceSuggestions, setAllianceSuggestions] = useState([]);
+  const [showAllianceSuggestions, setShowAllianceSuggestions] = useState(false);
   const [exifData, setExifData] = useState(null);
   const [useExifData, setUseExifData] = useState(true);
   const [isLoadingExif, setIsLoadingExif] = useState(false);
   const [isGeocodingLocation, setIsGeocodingLocation] = useState(false);
   
   // Form state
-  const [habitatName, setHabitatName] = useState('');
-  const [code, setCode] = useState('');
-  const [evcCode, setEvcCode] = useState('');
+  const [vegClass, setVegClass] = useState('');
+  const [vegOrder, setVegOrder] = useState('');
+  const [vegAlliance, setVegAlliance] = useState('');
   const [state, setState] = useState('');
   const [country, setCountry] = useState('');
   const [date, setDate] = useState('');
@@ -76,7 +82,9 @@ export default function HabitatUpload() {
         }
         
         // Set form values
-        setHabitatName(habitat.habitatName || '');
+        setVegClass(habitat.vegClass || habitat.habitatName || '');
+        setVegOrder(habitat.vegOrder || '');
+        setVegAlliance(habitat.vegAlliance || '');
         setState(habitat.state || '');
         setCountry(habitat.country || '');
         setDate(habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : '');
@@ -207,35 +215,45 @@ export default function HabitatUpload() {
     extractExifData();
   }, [selectedFiles, useExifData]); // Removed exifData from dependencies
 
-  // Search for EU Veg Units as user types
+  // Shared helper to search EU veg units by type
+  const searchVegUnits = async (query, type, setSuggestions, setShow) => {
+    if (query.trim().length < 2) {
+      setSuggestions([]);
+      setShow(false);
+      return;
+    }
+    try {
+      const response = await fetch(
+        `/api/eu-veg-units/search?type=${type}&query=${encodeURIComponent(query)}`
+      );
+      if (!response.ok) throw new Error(`Error: ${response.status}`);
+      const data = await response.json();
+      setSuggestions(data.units);
+      setShow(true);
+    } catch (err) {
+      console.error('Error searching EU Veg Units:', err);
+      setSuggestions([]);
+      setShow(false);
+    }
+  };
+
   useEffect(() => {
-    const searchEuVegUnits = async () => {
-      if (habitatName.trim().length < 2) {
-        setEuVegSuggestions([]);
-        setShowSuggestions(false);
-        return;
-      }
-      
-      try {
-        const response = await fetch(`/api/eu-veg-units/search?query=${encodeURIComponent(habitatName)}`);
-        
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setEuVegSuggestions(data.units);
-        setShowSuggestions(true);
-      } catch (error) {
-        console.error('Error searching EU Veg Units:', error);
-        setEuVegSuggestions([]);
-        setShowSuggestions(false);
-      }
-    };
-    
-    const debounceTimer = setTimeout(searchEuVegUnits, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [habitatName]);
+    const timer = setTimeout(() =>
+      searchVegUnits(vegClass, 'class', setClassSuggestions, setShowClassSuggestions), 300);
+    return () => clearTimeout(timer);
+  }, [vegClass]);
+
+  useEffect(() => {
+    const timer = setTimeout(() =>
+      searchVegUnits(vegOrder, 'order', setOrderSuggestions, setShowOrderSuggestions), 300);
+    return () => clearTimeout(timer);
+  }, [vegOrder]);
+
+  useEffect(() => {
+    const timer = setTimeout(() =>
+      searchVegUnits(vegAlliance, 'alliance', setAllianceSuggestions, setShowAllianceSuggestions), 300);
+    return () => clearTimeout(timer);
+  }, [vegAlliance]);
 
   // Reverse geocode coordinates to get location info
   useEffect(() => {
@@ -386,11 +404,19 @@ export default function HabitatUpload() {
     fileInputRef.current.click();
   };
 
-  const selectEuVegSuggestion = (nameWithoutAuthority, code, evc_code) => {
-    setHabitatName(nameWithoutAuthority);
-    setCode(code);
-    setEvcCode(evc_code);
-    setShowSuggestions(false);
+  const selectClassSuggestion = (nameWithoutAuthority) => {
+    setVegClass(nameWithoutAuthority);
+    setShowClassSuggestions(false);
+  };
+
+  const selectOrderSuggestion = (nameWithoutAuthority) => {
+    setVegOrder(nameWithoutAuthority);
+    setShowOrderSuggestions(false);
+  };
+
+  const selectAllianceSuggestion = (nameWithoutAuthority) => {
+    setVegAlliance(nameWithoutAuthority);
+    setShowAllianceSuggestions(false);
   };
 
   const removeImage = (index) => {
@@ -451,8 +477,8 @@ export default function HabitatUpload() {
       return;
     }
     
-    if (!habitatName || !state || !country) {
-      setError('Vegetation type name, state, and country are required');
+    if (!vegClass || !state || !country) {
+      setError('Vegetation class, state, and country are required');
       return;
     }
     
@@ -517,7 +543,9 @@ export default function HabitatUpload() {
       // Prepare data for API call
       const habitatData = {
         gpsCoordinate: `${latitude},${longitude}`,
-        habitatName,
+        vegClass,
+        vegOrder,
+        vegAlliance,
         state,
         country,
         date: date || new Date().toISOString(),
@@ -526,8 +554,6 @@ export default function HabitatUpload() {
         dominantSpecies2,
         dominantSpecies3,
         imageUrl: updatedImageUrls,
-        code: code || '',
-        evcCode: evcCode || '',
       };
       
       // If editing, add the habitat ID
@@ -561,7 +587,9 @@ export default function HabitatUpload() {
       mutate('/api/habitats');
       
       // Reset form and redirect
-      setHabitatName('');
+      setVegClass('');
+      setVegOrder('');
+      setVegAlliance('');
       setState('');
       setCountry('');
       setDate('');
@@ -726,29 +754,88 @@ export default function HabitatUpload() {
           </div>
         )}
         
+        {/* Vegetation Class (mandatory) */}
         <div className="mb-4 relative">
-          <label htmlFor="habitatName" className="block text-sm font-medium text-gray-700 mb-1">
-            Name without authority
+          <label htmlFor="vegClass" className="block text-sm font-medium text-gray-700 mb-1">
+            Vegetation Class <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
-            id="habitatName"
+            id="vegClass"
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            value={habitatName}
-            onChange={(e) => setHabitatName(e.target.value)}
-            placeholder="Search for an EuroVegChecklist vegetation type..."
+            value={vegClass}
+            onChange={(e) => setVegClass(e.target.value)}
+            placeholder="Search for a vegetation class..."
             required
           />
-          {showSuggestions && euVegSuggestions.length > 0 && (
+          {showClassSuggestions && classSuggestions.length > 0 && (
             <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-              {euVegSuggestions.map((unit) => (
+              {classSuggestions.map((unit) => (
                 <li
                   key={unit._id}
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => selectEuVegSuggestion(unit.name_without_authority, unit.code, unit.EVC_code)}
+                  onClick={() => selectClassSuggestion(unit.name_without_authority)}
                 >
                   <div className="font-medium">{unit.name_without_authority}</div>
-                  <div className="text-xs text-gray-500">Code: {unit.code} | EVC: {unit.EVC_code}</div>
+                  <div className="text-xs text-gray-500">Code: {unit.code}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Vegetation Order (optional) */}
+        <div className="mb-4 relative">
+          <label htmlFor="vegOrder" className="block text-sm font-medium text-gray-700 mb-1">
+            Vegetation Order
+          </label>
+          <input
+            type="text"
+            id="vegOrder"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={vegOrder}
+            onChange={(e) => setVegOrder(e.target.value)}
+            placeholder="Search for a vegetation order..."
+          />
+          {showOrderSuggestions && orderSuggestions.length > 0 && (
+            <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+              {orderSuggestions.map((unit) => (
+                <li
+                  key={unit._id}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => selectOrderSuggestion(unit.name_without_authority)}
+                >
+                  <div className="font-medium">{unit.name_without_authority}</div>
+                  <div className="text-xs text-gray-500">Code: {unit.code}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Vegetation Alliance (optional) */}
+        <div className="mb-4 relative">
+          <label htmlFor="vegAlliance" className="block text-sm font-medium text-gray-700 mb-1">
+            Vegetation Alliance
+          </label>
+          <input
+            type="text"
+            id="vegAlliance"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={vegAlliance}
+            onChange={(e) => setVegAlliance(e.target.value)}
+            placeholder="Search for a vegetation alliance..."
+          />
+          {showAllianceSuggestions && allianceSuggestions.length > 0 && (
+            <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+              {allianceSuggestions.map((unit) => (
+                <li
+                  key={unit._id}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => selectAllianceSuggestion(unit.name_without_authority)}
+                >
+                  <div className="font-medium">{unit.name_without_authority}</div>
+                  <div className="text-xs text-gray-500">Code: {unit.code}</div>
                 </li>
               ))}
             </ul>

@@ -47,71 +47,60 @@ export async function GET(req) {
       }
     }
 
-    // Special handling for 'group' field type
-    if (searchField === 'group' && searchText.trim()) {
-      // First, find habitats matching the habitat name
-      const matchingHabitats = await Habitat.find({
-        habitatName: { $regex: `^${searchText}`, $options: 'i' }
-      }).select('EVC_code').lean().exec();
+    // For habitatName, do a combined search by name OR EVC code
+    if (searchField === 'habitatName') {
+      const orCondition = {
+        $or: [
+          { habitatName: { $regex: searchText, $options: 'i' } },
+          { code: { $regex: searchText, $options: 'i' } },
+        ]
+      };
 
-      // Extract unique first 3 characters of EVC codes
-      const evcCodePrefixes = [...new Set(
-        matchingHabitats
-          .map(h => h.EVC_code)
-          .filter(code => code && code.length > 1)
-          .map(code => code.substring(0, 3))
-      )];
+      if (Object.keys(searchQuery).length > 0) {
+        searchQuery = { $and: [searchQuery, orCondition] };
+      } else {
+        searchQuery = orCondition;
+      }
 
-      // If we found any matching EVC code prefixes
-      if (evcCodePrefixes.length > 0) {
-        // Find all habitats with matching EVC code prefixes
-        const habitatsWithMatchingEVC = await Habitat.find({
-          EVC_code: {
-            $in: evcCodePrefixes.map(prefix => new RegExp(`^${prefix}`))
-          }
-        })
-        .select('habitatName EVC_code')
-        .limit(limit)
+      const habitats = await Habitat.find(searchQuery)
+        .select('habitatName code')
+        .limit(limit * 3)
         .lean()
         .exec();
-      
-        return NextResponse.json({
-          suggestions: habitatsWithMatchingEVC.map(h => ({
-            habitatName: h.habitatName,
-            EVC_code: h.EVC_code
-          }))
-        });
+
+      // Deduplicate by habitatName
+      const seen = new Set();
+      const unique = [];
+      for (const h of habitats) {
+        if (!seen.has(h.habitatName)) {
+          seen.add(h.habitatName);
+          unique.push({ habitatName: h.habitatName, code: h.code });
+          if (unique.length >= limit) break;
+        }
       }
-      
-      return NextResponse.json({ suggestions: [] });
+
+      return NextResponse.json({ suggestions: unique });
     }
 
     // Regular search for other fields
     if (searchText.trim()) {
-      // Create search condition for the selected field using regex for contains
       const fieldCondition = {
-        [searchField]: { $regex: `${searchText}`, $options: 'i' }
+        [searchField]: { $regex: searchText, $options: 'i' }
       };
-      
-      // If we already have user filters, combine with $and
+
       if (Object.keys(searchQuery).length > 0) {
-        searchQuery = {
-          $and: [
-            searchQuery,
-            fieldCondition
-          ]
-        };
+        searchQuery = { $and: [searchQuery, fieldCondition] };
       } else {
-        // Otherwise just use the field condition
         searchQuery = fieldCondition;
       }
     }
-      // Get distinct values for the search field
+
+    // Get distinct values for the search field
     const distinctValues = await Habitat.distinct(searchField, searchQuery);
 
     // Manually limit the results since .limit() can't be used with .distinct()
     const limitedValues = distinctValues.slice(0, limit);
-    
+
     return NextResponse.json({ suggestions: limitedValues });
   } catch (error) {
     console.error('Error getting autocomplete suggestions:', error);
