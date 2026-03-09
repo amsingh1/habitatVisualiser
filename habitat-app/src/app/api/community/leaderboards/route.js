@@ -200,11 +200,89 @@ export async function GET(req) {
       vegetationTypeCount: item.vegetationTypeCount
     }));
 
+    // Most unique vegetation types (all time) — same veg at many sites counts once
+    const mostUniqueVegTypes = await Habitat.aggregate([
+      {
+        $group: {
+          _id: '$user',
+          vegetationTypes: { $addToSet: '$habitatName' },
+          userName: { $first: '$userName' },
+          userEmail: { $first: '$userEmail' }
+        }
+      },
+      {
+        $addFields: { vegetationTypeCount: { $size: '$vegetationTypes' } }
+      },
+      {
+        $sort: { vegetationTypeCount: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]);
+
+    const vegTypeUserIds = mostUniqueVegTypes.map(u => u._id).filter(id => mongoose.Types.ObjectId.isValid(id));
+    const vegTypeUsers = await User.find({ _id: { $in: vegTypeUserIds } }).select('_id name image');
+    const vegTypeUserMap = vegTypeUsers.reduce((acc, user) => {
+      acc[user._id.toString()] = user;
+      return acc;
+    }, {});
+
+    const mostUniqueVegTypesFormatted = mostUniqueVegTypes.map(item => ({
+      userId: item._id,
+      userName: vegTypeUserMap[item._id]?.name || item.userName,
+      userImage: vegTypeUserMap[item._id]?.image || null,
+      score: item.vegetationTypeCount,
+      vegetationTypeCount: item.vegetationTypeCount
+    }));
+
+    // Most unique vegetation type × location (all time) — same veg at different sites counts separately
+    const mostUniqueVegLocations = await Habitat.aggregate([
+      {
+        $group: {
+          _id: '$user',
+          vegLocationPairs: { $addToSet: { habitatName: '$habitatName', state: '$state' } },
+          vegetationTypes: { $addToSet: '$habitatName' },
+          userName: { $first: '$userName' },
+          userEmail: { $first: '$userEmail' }
+        }
+      },
+      {
+        $addFields: {
+          uniqueVegLocationCount: { $size: '$vegLocationPairs' },
+          vegetationTypeCount: { $size: '$vegetationTypes' }
+        }
+      },
+      {
+        $sort: { uniqueVegLocationCount: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]);
+
+    const vegLocUserIds = mostUniqueVegLocations.map(u => u._id).filter(id => mongoose.Types.ObjectId.isValid(id));
+    const vegLocUsers = await User.find({ _id: { $in: vegLocUserIds } }).select('_id name image');
+    const vegLocUserMap = vegLocUsers.reduce((acc, user) => {
+      acc[user._id.toString()] = user;
+      return acc;
+    }, {});
+
+    const mostUniqueVegLocationsFormatted = mostUniqueVegLocations.map(item => ({
+      userId: item._id,
+      userName: vegLocUserMap[item._id]?.name || item.userName,
+      userImage: vegLocUserMap[item._id]?.image || null,
+      score: item.uniqueVegLocationCount,
+      vegetationTypeCount: item.vegetationTypeCount
+    }));
+
     return NextResponse.json({
       recentlyActive: recentlyActiveFormatted,
       mostUploadsThisMonth: mostUploadsThisMonthFormatted,
       mostUploadsThisYear: mostUploadsThisYearFormatted,
       mostUploadsAllTime: mostUploadsAllTimeFormatted,
+      mostUniqueVegTypes: mostUniqueVegTypesFormatted,
+      mostUniqueVegLocations: mostUniqueVegLocationsFormatted,
       currentMonth: now.toLocaleString('default', { month: 'long' }),
       currentYear: currentYear
     });

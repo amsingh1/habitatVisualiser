@@ -127,6 +127,37 @@ export default function CommunityClient() {
           />
         </div>
       </div>
+
+      {/* Two Column Layout for Vegetation Type Leaderboards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        {/* Most Unique Vegetation Types */}
+        <div>
+          <LeaderboardSection
+            title="Most unique vegetation types (all time)"
+            users={leaderboards.mostUniqueVegTypes}
+            showTimestamp={false}
+            layoutType="list"
+            scoreKey="score"
+            scoreLabelSingular="veg. type"
+            scoreLabelPlural="veg. types"
+            showVegTypeCount={false}
+          />
+        </div>
+
+        {/* Most Unique Vegetation Type × Location */}
+        <div>
+          <LeaderboardSection
+            title="Most unique vegetation type × location (all time)"
+            users={leaderboards.mostUniqueVegLocations}
+            showTimestamp={false}
+            layoutType="list"
+            scoreKey="score"
+            scoreLabelSingular="veg. type × location"
+            scoreLabelPlural="veg. types × locations"
+            showVegTypeCount={true}
+          />
+        </div>
+      </div>
     </div>
   );
 }
