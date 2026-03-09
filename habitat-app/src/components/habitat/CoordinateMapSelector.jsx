@@ -92,8 +92,8 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
     map.on('click', async (e) => {
       isSelectingRef.current = true;
       const { lat, lng } = e.latlng;
-      const formattedLat = parseFloat(lat.toFixed(6));
-      const formattedLng = parseFloat(lng.toFixed(6));
+      const formattedLat = parseFloat(lat.toFixed(2));
+      const formattedLng = parseFloat(lng.toFixed(2));
 
       // Remove old marker
       if (markerRef.current) {

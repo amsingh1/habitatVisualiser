@@ -182,8 +182,8 @@ export default function HabitatUpload() {
         if (foundUsefulExif && extractedData) {
           // Populate GPS coordinates if available
           if (extractedData.latitude && extractedData.longitude) {
-            setLatitude(extractedData.latitude.toString());
-            setLongitude(extractedData.longitude.toString());
+            setLatitude(extractedData.latitude.toFixed(2));
+            setLongitude(extractedData.longitude.toFixed(2));
           }
             
           // Populate date if available
@@ -936,7 +936,7 @@ export default function HabitatUpload() {
                   <p className="font-medium text-blue-800 mb-1">Photo EXIF Data Found:</p>
                   <ul className="list-disc list-inside text-blue-700 space-y-1">
                     {exifData.latitude && exifData.longitude && (
-                      <li>GPS: {exifData.latitude.toFixed(6)}, {exifData.longitude.toFixed(6)}</li>
+                      <li>GPS: {exifData.latitude.toFixed(2)}, {exifData.longitude.toFixed(2)}</li>
                     )}
                     {exifData.DateTimeOriginal && (
                       <li>Date Taken: {new Date(exifData.DateTimeOriginal).toLocaleDateString()}</li>

@@ -39,12 +39,16 @@ export async function GET(req) {
           _id: '$user',
           lastUpload: { $first: '$createdAt' },
           uploadCount: { $sum: 1 },
+          vegetationTypes: { $addToSet: '$habitatName' },
           userName: { $first: '$userName' },
           userEmail: { $first: '$userEmail' },
           habitatName: { $first: '$habitatName' },
           habitatImage: { $first: '$imageUrl' },
           habitatId: { $first: '$_id' }
         }
+      },
+      {
+        $addFields: { vegetationTypeCount: { $size: '$vegetationTypes' } }
       },
       {
         $sort: { lastUpload: -1 }
@@ -68,6 +72,7 @@ export async function GET(req) {
       userName: userMap[item._id]?.name || item.userName,
       userImage: userMap[item._id]?.image || null,
       uploadCount: item.uploadCount,
+      vegetationTypeCount: item.vegetationTypeCount,
       lastUpload: item.lastUpload,
       habitatName: item.habitatName,
       habitatImage: item.habitatImage ? item.habitatImage[0] : null,
@@ -85,9 +90,13 @@ export async function GET(req) {
         $group: {
           _id: '$user',
           uploadCount: { $sum: 1 },
+          vegetationTypes: { $addToSet: '$habitatName' },
           userName: { $first: '$userName' },
           userEmail: { $first: '$userEmail' }
         }
+      },
+      {
+        $addFields: { vegetationTypeCount: { $size: '$vegetationTypes' } }
       },
       {
         $sort: { uploadCount: -1 }
@@ -108,7 +117,8 @@ export async function GET(req) {
       userId: item._id,
       userName: monthUserMap[item._id]?.name || item.userName,
       userImage: monthUserMap[item._id]?.image || null,
-      uploadCount: item.uploadCount
+      uploadCount: item.uploadCount,
+      vegetationTypeCount: item.vegetationTypeCount
     }));
 
     // Most uploads this year
@@ -122,9 +132,13 @@ export async function GET(req) {
         $group: {
           _id: '$user',
           uploadCount: { $sum: 1 },
+          vegetationTypes: { $addToSet: '$habitatName' },
           userName: { $first: '$userName' },
           userEmail: { $first: '$userEmail' }
         }
+      },
+      {
+        $addFields: { vegetationTypeCount: { $size: '$vegetationTypes' } }
       },
       {
         $sort: { uploadCount: -1 }
@@ -145,7 +159,8 @@ export async function GET(req) {
       userId: item._id,
       userName: yearUserMap[item._id]?.name || item.userName,
       userImage: yearUserMap[item._id]?.image || null,
-      uploadCount: item.uploadCount
+      uploadCount: item.uploadCount,
+      vegetationTypeCount: item.vegetationTypeCount
     }));
 
     // Most uploads all time
@@ -154,9 +169,13 @@ export async function GET(req) {
         $group: {
           _id: '$user',
           uploadCount: { $sum: 1 },
+          vegetationTypes: { $addToSet: '$habitatName' },
           userName: { $first: '$userName' },
           userEmail: { $first: '$userEmail' }
         }
+      },
+      {
+        $addFields: { vegetationTypeCount: { $size: '$vegetationTypes' } }
       },
       {
         $sort: { uploadCount: -1 }
@@ -177,7 +196,84 @@ export async function GET(req) {
       userId: item._id,
       userName: allTimeUserMap[item._id]?.name || item.userName,
       userImage: allTimeUserMap[item._id]?.image || null,
-      uploadCount: item.uploadCount
+      uploadCount: item.uploadCount,
+      vegetationTypeCount: item.vegetationTypeCount
+    }));
+
+    // Most unique vegetation types (all time) — same veg at many sites counts once
+    const mostUniqueVegTypes = await Habitat.aggregate([
+      {
+        $group: {
+          _id: '$user',
+          vegetationTypes: { $addToSet: '$habitatName' },
+          userName: { $first: '$userName' },
+          userEmail: { $first: '$userEmail' }
+        }
+      },
+      {
+        $addFields: { vegetationTypeCount: { $size: '$vegetationTypes' } }
+      },
+      {
+        $sort: { vegetationTypeCount: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]);
+
+    const vegTypeUserIds = mostUniqueVegTypes.map(u => u._id).filter(id => mongoose.Types.ObjectId.isValid(id));
+    const vegTypeUsers = await User.find({ _id: { $in: vegTypeUserIds } }).select('_id name image');
+    const vegTypeUserMap = vegTypeUsers.reduce((acc, user) => {
+      acc[user._id.toString()] = user;
+      return acc;
+    }, {});
+
+    const mostUniqueVegTypesFormatted = mostUniqueVegTypes.map(item => ({
+      userId: item._id,
+      userName: vegTypeUserMap[item._id]?.name || item.userName,
+      userImage: vegTypeUserMap[item._id]?.image || null,
+      score: item.vegetationTypeCount,
+      vegetationTypeCount: item.vegetationTypeCount
+    }));
+
+    // Most unique vegetation type × location (all time) — same veg at different sites counts separately
+    const mostUniqueVegLocations = await Habitat.aggregate([
+      {
+        $group: {
+          _id: '$user',
+          vegLocationPairs: { $addToSet: { habitatName: '$habitatName', state: '$state' } },
+          vegetationTypes: { $addToSet: '$habitatName' },
+          userName: { $first: '$userName' },
+          userEmail: { $first: '$userEmail' }
+        }
+      },
+      {
+        $addFields: {
+          uniqueVegLocationCount: { $size: '$vegLocationPairs' },
+          vegetationTypeCount: { $size: '$vegetationTypes' }
+        }
+      },
+      {
+        $sort: { uniqueVegLocationCount: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]);
+
+    const vegLocUserIds = mostUniqueVegLocations.map(u => u._id).filter(id => mongoose.Types.ObjectId.isValid(id));
+    const vegLocUsers = await User.find({ _id: { $in: vegLocUserIds } }).select('_id name image');
+    const vegLocUserMap = vegLocUsers.reduce((acc, user) => {
+      acc[user._id.toString()] = user;
+      return acc;
+    }, {});
+
+    const mostUniqueVegLocationsFormatted = mostUniqueVegLocations.map(item => ({
+      userId: item._id,
+      userName: vegLocUserMap[item._id]?.name || item.userName,
+      userImage: vegLocUserMap[item._id]?.image || null,
+      score: item.uniqueVegLocationCount,
+      vegetationTypeCount: item.vegetationTypeCount
     }));
 
     return NextResponse.json({
@@ -185,6 +281,8 @@ export async function GET(req) {
       mostUploadsThisMonth: mostUploadsThisMonthFormatted,
       mostUploadsThisYear: mostUploadsThisYearFormatted,
       mostUploadsAllTime: mostUploadsAllTimeFormatted,
+      mostUniqueVegTypes: mostUniqueVegTypesFormatted,
+      mostUniqueVegLocations: mostUniqueVegLocationsFormatted,
       currentMonth: now.toLocaleString('default', { month: 'long' }),
       currentYear: currentYear
     });

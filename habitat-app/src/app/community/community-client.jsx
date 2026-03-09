@@ -127,6 +127,39 @@ export default function CommunityClient() {
           />
         </div>
       </div>
+
+      {/* Two Column Layout for Records and Vegetation Type Leaderboards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        {/* Number of Records */}
+        <div>
+          <LeaderboardSection
+            title="Number of records (all time)"
+            description="Each unique combination of vegetation type and site counts as one record. Uploading the same vegetation type from 12 different sites = 12 records."
+            users={leaderboards.mostUniqueVegLocations}
+            showTimestamp={false}
+            layoutType="list"
+            scoreKey="score"
+            scoreLabelSingular="record"
+            scoreLabelPlural="records"
+            showVegTypeCount={true}
+          />
+        </div>
+
+        {/* Number of Vegetation Types */}
+        <div>
+          <LeaderboardSection
+            title="Number of vegetation types (all time)"
+            description="Each unique vegetation type counts once, regardless of how many sites it was uploaded from. Uploading the same type from 12 different sites = 1 vegetation type."
+            users={leaderboards.mostUniqueVegTypes}
+            showTimestamp={false}
+            layoutType="list"
+            scoreKey="score"
+            scoreLabelSingular="vegetation type"
+            scoreLabelPlural="vegetation types"
+            showVegTypeCount={false}
+          />
+        </div>
+      </div>
     </div>
   );
 }

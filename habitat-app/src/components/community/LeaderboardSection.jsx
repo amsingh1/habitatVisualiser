@@ -2,11 +2,35 @@
 
 import React from 'react';
 
-export default function LeaderboardSection({ title, users, showTimestamp, layoutType = 'list' }) {
+export default function LeaderboardSection({
+  title,
+  description,
+  users,
+  showTimestamp,
+  layoutType = 'list',
+  scoreKey = 'uploadCount',
+  scoreLabelSingular = 'record',
+  scoreLabelPlural = 'records',
+  showVegTypeCount = true,
+}) {
+  const titleRow = (
+    <div className="flex items-center gap-2 mb-4">
+      <h3 className="text-xl font-semibold">{title}</h3>
+      {description && (
+        <div className="relative group flex items-center">
+          <span className="text-gray-400 cursor-help text-sm select-none">ⓘ</span>
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-gray-800 text-white text-xs rounded-md px-3 py-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-10 shadow-lg">
+            {description}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   if (!users || users.length === 0) {
     return (
       <div className="mb-12">
-        <h3 className="text-xl font-semibold mb-4">{title}</h3>
+        {titleRow}
         <p className="text-gray-500">No data available</p>
       </div>
     );
@@ -16,13 +40,17 @@ export default function LeaderboardSection({ title, users, showTimestamp, layout
   if (layoutType === 'grid') {
     return (
       <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4">{title}</h3>
+        {titleRow}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {users.slice(0, 10).map((user, index) => (
+          {users.slice(0, 10).map((user) => (
             <UserCard
               key={user.userId}
               user={user}
               showTimestamp={showTimestamp}
+              scoreKey={scoreKey}
+              scoreLabelSingular={scoreLabelSingular}
+              scoreLabelPlural={scoreLabelPlural}
+              showVegTypeCount={showVegTypeCount}
             />
           ))}
         </div>
@@ -33,7 +61,7 @@ export default function LeaderboardSection({ title, users, showTimestamp, layout
   // List layout for leaderboards
   return (
     <div className="mb-8">
-      <h3 className="text-xl font-semibold mb-4">{title}</h3>
+      {titleRow}
       <ol className="space-y-3">
         {users.slice(0, 5).map((user, index) => (
           <UserRow
@@ -41,6 +69,10 @@ export default function LeaderboardSection({ title, users, showTimestamp, layout
             rank={index + 1}
             user={user}
             showTimestamp={showTimestamp}
+            scoreKey={scoreKey}
+            scoreLabelSingular={scoreLabelSingular}
+            scoreLabelPlural={scoreLabelPlural}
+            showVegTypeCount={showVegTypeCount}
           />
         ))}
       </ol>
@@ -80,14 +112,14 @@ const formatTimestamp = (date) => {
 };
 
 // Card component for Recently Active (grid layout)
-function UserCard({ user, showTimestamp }) {
+function UserCard({ user, showTimestamp, scoreKey, scoreLabelSingular, scoreLabelPlural, showVegTypeCount }) {
+  const score = user[scoreKey] ?? 0;
   const handleCardClick = () => {
-    // Navigate to user's uploads page with their userId as filter
     window.location.href = `/habitats?user=${user.userId}`;
   };
 
   return (
-    <div 
+    <div
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
       onClick={handleCardClick}
     >
@@ -111,8 +143,15 @@ function UserCard({ user, showTimestamp }) {
         <h4 className="font-semibold text-sm mb-1 truncate text-blue-600">
           {user.userName}
         </h4>
-        <p className="text-xs text-gray-600 truncate">
-          {user.habitatName ? `added ${user.habitatName}` : 'added an upload'}
+        {user.habitatName && (
+          <p className="text-xs text-gray-600 truncate">added {user.habitatName}</p>
+        )}
+        <p className="text-xs text-gray-500 mt-1">
+          <span className="text-green-600 font-semibold">{score}</span>
+          {' '}{score === 1 ? scoreLabelSingular : scoreLabelPlural}
+          {showVegTypeCount && user.vegetationTypeCount != null && (
+            <> · <span className="text-blue-600 font-semibold">{user.vegetationTypeCount}</span> {user.vegetationTypeCount === 1 ? 'veg. type' : 'veg. types'}</>
+          )}
         </p>
         {showTimestamp && user.lastUpload && (
           <p className="text-xs text-gray-500 mt-1">
@@ -125,12 +164,13 @@ function UserCard({ user, showTimestamp }) {
 }
 
 // Row component for leaderboards (list layout)
-function UserRow({ rank, user, showTimestamp }) {
+function UserRow({ rank, user, showTimestamp, scoreKey, scoreLabelSingular, scoreLabelPlural, showVegTypeCount }) {
+  const score = user[scoreKey] ?? 0;
   return (
     <li className="flex items-center space-x-3 py-2">
       {/* Rank */}
       <span className="text-lg font-semibold text-gray-700 w-6">{rank}.</span>
-      
+
       {/* User Avatar */}
       <div className="flex-shrink-0">
         {user.userImage ? (
@@ -149,15 +189,20 @@ function UserRow({ rank, user, showTimestamp }) {
       {/* User Info */}
       <div className="flex-grow">
         <div className="flex items-center space-x-2">
-          <span className="text-gray-900 font-medium">
-            {user.userName}
-          </span>
+          <span className="text-gray-900 font-medium">{user.userName}</span>
         </div>
         <div className="text-sm text-gray-600">
-          <span className={`${user.uploadCount > 999 ? 'text-orange-600 font-bold' : 'text-green-600 font-semibold'}`}>
-            {user.uploadCount.toLocaleString()}
+          <span className={`${score > 999 ? 'text-orange-600 font-bold' : 'text-green-600 font-semibold'}`}>
+            {score.toLocaleString()}
           </span>
-          <span className="text-gray-500"> {user.uploadCount === 1 ? 'upload' : 'uploads'}</span>
+          <span className="text-gray-500"> {score === 1 ? scoreLabelSingular : scoreLabelPlural}</span>
+          {showVegTypeCount && user.vegetationTypeCount != null && (
+            <span className="text-gray-400">
+              {' · '}
+              <span className="text-blue-600 font-semibold">{user.vegetationTypeCount.toLocaleString()}</span>
+              {' '}{user.vegetationTypeCount === 1 ? 'veg. type' : 'veg. types'}
+            </span>
+          )}
           {showTimestamp && user.lastUpload && (
             <span className="text-gray-400"> • uploaded {formatTimestamp(user.lastUpload)}</span>
           )}
