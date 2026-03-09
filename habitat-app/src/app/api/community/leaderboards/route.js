@@ -39,12 +39,16 @@ export async function GET(req) {
           _id: '$user',
           lastUpload: { $first: '$createdAt' },
           uploadCount: { $sum: 1 },
+          vegetationTypes: { $addToSet: '$habitatName' },
           userName: { $first: '$userName' },
           userEmail: { $first: '$userEmail' },
           habitatName: { $first: '$habitatName' },
           habitatImage: { $first: '$imageUrl' },
           habitatId: { $first: '$_id' }
         }
+      },
+      {
+        $addFields: { vegetationTypeCount: { $size: '$vegetationTypes' } }
       },
       {
         $sort: { lastUpload: -1 }
@@ -68,6 +72,7 @@ export async function GET(req) {
       userName: userMap[item._id]?.name || item.userName,
       userImage: userMap[item._id]?.image || null,
       uploadCount: item.uploadCount,
+      vegetationTypeCount: item.vegetationTypeCount,
       lastUpload: item.lastUpload,
       habitatName: item.habitatName,
       habitatImage: item.habitatImage ? item.habitatImage[0] : null,
@@ -85,9 +90,13 @@ export async function GET(req) {
         $group: {
           _id: '$user',
           uploadCount: { $sum: 1 },
+          vegetationTypes: { $addToSet: '$habitatName' },
           userName: { $first: '$userName' },
           userEmail: { $first: '$userEmail' }
         }
+      },
+      {
+        $addFields: { vegetationTypeCount: { $size: '$vegetationTypes' } }
       },
       {
         $sort: { uploadCount: -1 }
@@ -108,7 +117,8 @@ export async function GET(req) {
       userId: item._id,
       userName: monthUserMap[item._id]?.name || item.userName,
       userImage: monthUserMap[item._id]?.image || null,
-      uploadCount: item.uploadCount
+      uploadCount: item.uploadCount,
+      vegetationTypeCount: item.vegetationTypeCount
     }));
 
     // Most uploads this year
@@ -122,9 +132,13 @@ export async function GET(req) {
         $group: {
           _id: '$user',
           uploadCount: { $sum: 1 },
+          vegetationTypes: { $addToSet: '$habitatName' },
           userName: { $first: '$userName' },
           userEmail: { $first: '$userEmail' }
         }
+      },
+      {
+        $addFields: { vegetationTypeCount: { $size: '$vegetationTypes' } }
       },
       {
         $sort: { uploadCount: -1 }
@@ -145,7 +159,8 @@ export async function GET(req) {
       userId: item._id,
       userName: yearUserMap[item._id]?.name || item.userName,
       userImage: yearUserMap[item._id]?.image || null,
-      uploadCount: item.uploadCount
+      uploadCount: item.uploadCount,
+      vegetationTypeCount: item.vegetationTypeCount
     }));
 
     // Most uploads all time
@@ -154,9 +169,13 @@ export async function GET(req) {
         $group: {
           _id: '$user',
           uploadCount: { $sum: 1 },
+          vegetationTypes: { $addToSet: '$habitatName' },
           userName: { $first: '$userName' },
           userEmail: { $first: '$userEmail' }
         }
+      },
+      {
+        $addFields: { vegetationTypeCount: { $size: '$vegetationTypes' } }
       },
       {
         $sort: { uploadCount: -1 }
@@ -177,7 +196,8 @@ export async function GET(req) {
       userId: item._id,
       userName: allTimeUserMap[item._id]?.name || item.userName,
       userImage: allTimeUserMap[item._id]?.image || null,
-      uploadCount: item.uploadCount
+      uploadCount: item.uploadCount,
+      vegetationTypeCount: item.vegetationTypeCount
     }));
 
     return NextResponse.json({

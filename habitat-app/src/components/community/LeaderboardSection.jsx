@@ -114,6 +114,12 @@ function UserCard({ user, showTimestamp }) {
         <p className="text-xs text-gray-600 truncate">
           {user.habitatName ? `added ${user.habitatName}` : 'added an upload'}
         </p>
+        <p className="text-xs text-gray-500 mt-1">
+          <span className="text-green-600 font-semibold">{user.uploadCount}</span> {user.uploadCount === 1 ? 'record' : 'records'}
+          {user.vegetationTypeCount != null && (
+            <> · <span className="text-blue-600 font-semibold">{user.vegetationTypeCount}</span> {user.vegetationTypeCount === 1 ? 'veg. type' : 'veg. types'}</>
+          )}
+        </p>
         {showTimestamp && user.lastUpload && (
           <p className="text-xs text-gray-500 mt-1">
             {formatTimestamp(user.lastUpload)}
@@ -157,7 +163,14 @@ function UserRow({ rank, user, showTimestamp }) {
           <span className={`${user.uploadCount > 999 ? 'text-orange-600 font-bold' : 'text-green-600 font-semibold'}`}>
             {user.uploadCount.toLocaleString()}
           </span>
-          <span className="text-gray-500"> {user.uploadCount === 1 ? 'upload' : 'uploads'}</span>
+          <span className="text-gray-500"> {user.uploadCount === 1 ? 'record' : 'records'}</span>
+          {user.vegetationTypeCount != null && (
+            <span className="text-gray-400">
+              {' · '}
+              <span className="text-blue-600 font-semibold">{user.vegetationTypeCount.toLocaleString()}</span>
+              {' '}{user.vegetationTypeCount === 1 ? 'veg. type' : 'veg. types'}
+            </span>
+          )}
           {showTimestamp && user.lastUpload && (
             <span className="text-gray-400"> • uploaded {formatTimestamp(user.lastUpload)}</span>
           )}
