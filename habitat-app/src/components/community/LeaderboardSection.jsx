@@ -4,6 +4,7 @@ import React from 'react';
 
 export default function LeaderboardSection({
   title,
+  description,
   users,
   showTimestamp,
   layoutType = 'list',
@@ -15,7 +16,8 @@ export default function LeaderboardSection({
   if (!users || users.length === 0) {
     return (
       <div className="mb-12">
-        <h3 className="text-xl font-semibold mb-4">{title}</h3>
+        <h3 className="text-xl font-semibold mb-1">{title}</h3>
+        {description && <p className="text-xs text-gray-400 mb-4">{description}</p>}
         <p className="text-gray-500">No data available</p>
       </div>
     );
@@ -25,7 +27,8 @@ export default function LeaderboardSection({
   if (layoutType === 'grid') {
     return (
       <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4">{title}</h3>
+        <h3 className="text-xl font-semibold mb-1">{title}</h3>
+        {description && <p className="text-xs text-gray-400 mb-4">{description}</p>}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {users.slice(0, 10).map((user) => (
             <UserCard
@@ -46,7 +49,8 @@ export default function LeaderboardSection({
   // List layout for leaderboards
   return (
     <div className="mb-8">
-      <h3 className="text-xl font-semibold mb-4">{title}</h3>
+      <h3 className="text-xl font-semibold mb-1">{title}</h3>
+      {description && <p className="text-xs text-gray-400 mb-4">{description}</p>}
       <ol className="space-y-3">
         {users.slice(0, 5).map((user, index) => (
           <UserRow
