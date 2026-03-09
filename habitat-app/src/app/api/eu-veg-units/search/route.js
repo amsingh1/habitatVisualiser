@@ -33,7 +33,7 @@ export async function GET(request) {
     }
     
     // Build query: filter by name and, when type is given, by code pattern
-    const dbQuery = { name_without_authority: { $regex: query, $options: 'i' } };
+    const dbQuery = { name_without_authority: { $regex: '^' + query, $options: 'i' } };
     if (type && CODE_PATTERNS[type]) {
       dbQuery.code = { $regex: CODE_PATTERNS[type].source };
     }

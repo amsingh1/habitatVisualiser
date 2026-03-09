@@ -25,17 +25,17 @@ export async function GET(req) {
     const searchCriteria = {};
     
     if (query) {
-      const searchRegex = new RegExp(query, 'i');
+      const searchRegex = new RegExp('^' + query, 'i');
       searchCriteria.habitatName = { $regex: searchRegex };
     }
     
     if (state) {
-      const stateRegex = new RegExp(state, 'i');
+      const stateRegex = new RegExp('^' + state, 'i');
       searchCriteria.state = { $regex: stateRegex };
     }
     
     if (country) {
-      const countryRegex = new RegExp(country, 'i');
+      const countryRegex = new RegExp('^' + country, 'i');
       searchCriteria.country = { $regex: countryRegex };
     }
     

@@ -51,8 +51,8 @@ export async function GET(req) {
     if (searchField === 'habitatName') {
       const orCondition = {
         $or: [
-          { habitatName: { $regex: searchText, $options: 'i' } },
-          { code: { $regex: searchText, $options: 'i' } },
+          { habitatName: { $regex: '^' + searchText, $options: 'i' } },
+          { code: { $regex: '^' + searchText, $options: 'i' } },
         ]
       };
 
@@ -85,7 +85,7 @@ export async function GET(req) {
     // Regular search for other fields
     if (searchText.trim()) {
       const fieldCondition = {
-        [searchField]: { $regex: searchText, $options: 'i' }
+        [searchField]: { $regex: '^' + searchText, $options: 'i' }
       };
 
       if (Object.keys(searchQuery).length > 0) {

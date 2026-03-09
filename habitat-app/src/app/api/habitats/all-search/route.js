@@ -59,39 +59,39 @@ export async function GET(req) {
       // Add conditions for each non-empty field
       if (advancedHabitatName && advancedHabitatName.trim()) {
         andConditions.push({
-          habitatName: { $regex: advancedHabitatName.trim(), $options: 'i' }
+          habitatName: { $regex: '^' + advancedHabitatName.trim(), $options: 'i' }
         });
       }
-      
+
       if (advancedCountry && advancedCountry.trim()) {
         andConditions.push({
-          country: { $regex: advancedCountry.trim(), $options: 'i' }
+          country: { $regex: '^' + advancedCountry.trim(), $options: 'i' }
         });
       }
-      
+
       if (advancedState && advancedState.trim()) {
         andConditions.push({
-          state: { $regex: advancedState.trim(), $options: 'i' }
+          state: { $regex: '^' + advancedState.trim(), $options: 'i' }
         });
       }
-      
+
       if (advancedGroup && advancedGroup.trim()) {
         // For group, search by habitatName (group searches vegetation types with similar EVC codes)
         andConditions.push({
-          habitatName: { $regex: advancedGroup.trim(), $options: 'i' }
+          habitatName: { $regex: '^' + advancedGroup.trim(), $options: 'i' }
         });
       }
-      
+
       if (advancedUserName && advancedUserName.trim()) {
         andConditions.push({
-          userName: { $regex: advancedUserName.trim(), $options: 'i' }
+          userName: { $regex: '^' + advancedUserName.trim(), $options: 'i' }
         });
       }
     } else if (searchText.trim()) {
       // Simple search mode - If search text is provided, add text search condition
       // Create search condition for the selected field - using exact match (case insensitive)
       andConditions.push({
-        [searchField]: { $regex: `^${searchText}$`, $options: 'i' }
+        [searchField]: { $regex: `^${searchText}`, $options: 'i' }
       });
     }
     

@@ -51,26 +51,26 @@ export async function GET(req) {
       // Add conditions for each non-empty field
       if (advancedHabitatName && advancedHabitatName.trim()) {
         andConditions.push({
-          habitatName: { $regex: advancedHabitatName.trim(), $options: 'i' }
+          habitatName: { $regex: '^' + advancedHabitatName.trim(), $options: 'i' }
         });
       }
-      
+
       if (advancedCountry && advancedCountry.trim()) {
         andConditions.push({
-          country: { $regex: advancedCountry.trim(), $options: 'i' }
+          country: { $regex: '^' + advancedCountry.trim(), $options: 'i' }
         });
       }
-      
+
       if (advancedState && advancedState.trim()) {
         andConditions.push({
-          state: { $regex: advancedState.trim(), $options: 'i' }
+          state: { $regex: '^' + advancedState.trim(), $options: 'i' }
         });
       }
-      
+
       if (advancedGroup && advancedGroup.trim()) {
         // For group, search by habitatName
         andConditions.push({
-          habitatName: { $regex: advancedGroup.trim(), $options: 'i' }
+          habitatName: { $regex: '^' + advancedGroup.trim(), $options: 'i' }
         });
       }
     }
