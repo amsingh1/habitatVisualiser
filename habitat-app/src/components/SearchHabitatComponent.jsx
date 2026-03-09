@@ -90,6 +90,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   const [activeSuggestionField, setActiveSuggestionField] = useState(null);
   const [advancedSuggestions, setAdvancedSuggestions] = useState({});
   const advancedRefs = useRef({});
+  const skipSimpleSearch = useRef(false);
   
   // Initialize advanced criteria from URL if available
   useEffect(() => {
@@ -228,12 +229,13 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   // Debounce function for simple search input
   useEffect(() => {
     if (!isAdvancedMode) {
+      if (skipSimpleSearch.current) { skipSimpleSearch.current = false; return; }
       const debounceTimer = setTimeout(() => {
         if (searchText) {
           fetchSuggestions(searchText);
         }
       }, 300);
-      
+
       return () => {
         clearTimeout(debounceTimer);
       };
@@ -290,6 +292,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   
   // Handle suggestion selection
   const handleSuggestionClick = (suggestion) => {
+    skipSimpleSearch.current = true;
     setSearchText(suggestion);
     setShowSuggestions(false);
     // Update URL and trigger search

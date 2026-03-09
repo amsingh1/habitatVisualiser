@@ -59,6 +59,10 @@ export default function HabitatUpload() {
   const [existingImages, setExistingImages] = useState([]);
   const [showMap, setShowMap] = useState(false);
   const fileInputRef = useRef(null);
+  // Refs to skip search useEffects when a suggestion was just selected
+  const skipClassSearch = useRef(false);
+  const skipOrderSearch = useRef(false);
+  const skipAllianceSearch = useRef(false);
 
   // Fetch existing habitat data if editing
   useEffect(() => {
@@ -238,18 +242,21 @@ export default function HabitatUpload() {
   };
 
   useEffect(() => {
+    if (skipClassSearch.current) { skipClassSearch.current = false; return; }
     const timer = setTimeout(() =>
       searchVegUnits(vegClass, 'class', setClassSuggestions, setShowClassSuggestions), 300);
     return () => clearTimeout(timer);
   }, [vegClass]);
 
   useEffect(() => {
+    if (skipOrderSearch.current) { skipOrderSearch.current = false; return; }
     const timer = setTimeout(() =>
       searchVegUnits(vegOrder, 'order', setOrderSuggestions, setShowOrderSuggestions), 300);
     return () => clearTimeout(timer);
   }, [vegOrder]);
 
   useEffect(() => {
+    if (skipAllianceSearch.current) { skipAllianceSearch.current = false; return; }
     const timer = setTimeout(() =>
       searchVegUnits(vegAlliance, 'alliance', setAllianceSuggestions, setShowAllianceSuggestions), 300);
     return () => clearTimeout(timer);
@@ -405,16 +412,19 @@ export default function HabitatUpload() {
   };
 
   const selectClassSuggestion = (nameWithoutAuthority) => {
+    skipClassSearch.current = true;
     setVegClass(nameWithoutAuthority);
     setShowClassSuggestions(false);
   };
 
   const selectOrderSuggestion = (nameWithoutAuthority) => {
+    skipOrderSearch.current = true;
     setVegOrder(nameWithoutAuthority);
     setShowOrderSuggestions(false);
   };
 
   const selectAllianceSuggestion = (nameWithoutAuthority) => {
+    skipAllianceSearch.current = true;
     setVegAlliance(nameWithoutAuthority);
     setShowAllianceSuggestions(false);
   };
