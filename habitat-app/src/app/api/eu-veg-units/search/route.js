@@ -11,8 +11,9 @@ const CODE_PATTERNS = {
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const query = searchParams.get('query');
-  const type  = searchParams.get('type'); // 'class' | 'order' | 'alliance'
+  const query     = searchParams.get('query');
+  const type      = searchParams.get('type');      // 'class' | 'order' | 'alliance'
+  const classCode = searchParams.get('classCode'); // optional: filter order/alliance by parent class code
 
   if (!query || query.trim().length < 2) {
     return NextResponse.json(
@@ -34,7 +35,12 @@ export async function GET(request) {
     
     // Build query: filter by name and, when type is given, by code pattern
     const dbQuery = { name_without_authority: { $regex: '^' + query, $options: 'i' } };
-    if (type && CODE_PATTERNS[type]) {
+    if (classCode && (type === 'order' || type === 'alliance')) {
+      // Filter order/alliance by the selected class code prefix
+      const escaped = classCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const suffix  = type === 'order' ? '\\d{2}$' : '\\d{2}[A-Z]$';
+      dbQuery.code  = { $regex: `^${escaped}${suffix}` };
+    } else if (type && CODE_PATTERNS[type]) {
       dbQuery.code = { $regex: CODE_PATTERNS[type].source };
     }
     

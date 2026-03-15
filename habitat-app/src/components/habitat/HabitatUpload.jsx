@@ -42,6 +42,7 @@ export default function HabitatUpload() {
   
   // Form state
   const [vegClass, setVegClass] = useState('');
+  const [vegClassCode, setVegClassCode] = useState(''); // code of the selected class, used to filter order/alliance
   const [vegOrder, setVegOrder] = useState('');
   const [vegAlliance, setVegAlliance] = useState('');
   const [state, setState] = useState('');
@@ -220,16 +221,16 @@ export default function HabitatUpload() {
   }, [selectedFiles, useExifData]); // Removed exifData from dependencies
 
   // Shared helper to search EU veg units by type
-  const searchVegUnits = async (query, type, setSuggestions, setShow) => {
+  const searchVegUnits = async (query, type, setSuggestions, setShow, classCode = '') => {
     if (query.trim().length < 2) {
       setSuggestions([]);
       setShow(false);
       return;
     }
     try {
-      const response = await fetch(
-        `/api/eu-veg-units/search?type=${type}&query=${encodeURIComponent(query)}`
-      );
+      let url = `/api/eu-veg-units/search?type=${type}&query=${encodeURIComponent(query)}`;
+      if (classCode) url += `&classCode=${encodeURIComponent(classCode)}`;
+      const response = await fetch(url);
       if (!response.ok) throw new Error(`Error: ${response.status}`);
       const data = await response.json();
       setSuggestions(data.units);
@@ -251,16 +252,16 @@ export default function HabitatUpload() {
   useEffect(() => {
     if (skipOrderSearch.current) { skipOrderSearch.current = false; return; }
     const timer = setTimeout(() =>
-      searchVegUnits(vegOrder, 'order', setOrderSuggestions, setShowOrderSuggestions), 300);
+      searchVegUnits(vegOrder, 'order', setOrderSuggestions, setShowOrderSuggestions, vegClassCode), 300);
     return () => clearTimeout(timer);
-  }, [vegOrder]);
+  }, [vegOrder, vegClassCode]);
 
   useEffect(() => {
     if (skipAllianceSearch.current) { skipAllianceSearch.current = false; return; }
     const timer = setTimeout(() =>
-      searchVegUnits(vegAlliance, 'alliance', setAllianceSuggestions, setShowAllianceSuggestions), 300);
+      searchVegUnits(vegAlliance, 'alliance', setAllianceSuggestions, setShowAllianceSuggestions, vegClassCode), 300);
     return () => clearTimeout(timer);
-  }, [vegAlliance]);
+  }, [vegAlliance, vegClassCode]);
 
   // Reverse geocode coordinates to get location info
   useEffect(() => {
@@ -411,9 +412,10 @@ export default function HabitatUpload() {
     fileInputRef.current.click();
   };
 
-  const selectClassSuggestion = (nameWithoutAuthority) => {
+  const selectClassSuggestion = (nameWithoutAuthority, code) => {
     skipClassSearch.current = true;
     setVegClass(nameWithoutAuthority);
+    setVegClassCode(code);
     setShowClassSuggestions(false);
   };
 
@@ -774,7 +776,7 @@ export default function HabitatUpload() {
             id="vegClass"
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={vegClass}
-            onChange={(e) => setVegClass(e.target.value)}
+            onChange={(e) => { setVegClass(e.target.value); setVegClassCode(''); }}
             placeholder="Search for a vegetation class..."
             required
           />
@@ -784,7 +786,7 @@ export default function HabitatUpload() {
                 <li
                   key={unit._id}
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => selectClassSuggestion(unit.name_without_authority)}
+                  onClick={() => selectClassSuggestion(unit.name_without_authority, unit.code)}
                 >
                   <div className="font-medium">{unit.name_without_authority}</div>
                   <div className="text-xs text-gray-500">Code: {unit.code}</div>
@@ -864,7 +866,7 @@ export default function HabitatUpload() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="latitude" className="block text-xs text-gray-600 mb-1">
-                Latitude
+                Latitude <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -878,7 +880,7 @@ export default function HabitatUpload() {
             </div>
             <div>
               <label htmlFor="longitude" className="block text-xs text-gray-600 mb-1">
-                Longitude
+                Longitude <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -976,7 +978,7 @@ export default function HabitatUpload() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="state" className="block text-xs text-gray-600 mb-1">
-                State/Region, Municipality, Site name
+                State/Region, Municipality, Site name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -990,7 +992,7 @@ export default function HabitatUpload() {
             </div>
             <div>
               <label htmlFor="country" className="block text-xs text-gray-600 mb-1">
-                Country
+                Country <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
