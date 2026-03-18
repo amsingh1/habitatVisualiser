@@ -414,9 +414,15 @@ export default function HabitatUpload() {
 
   const selectClassSuggestion = (nameWithoutAuthority, code) => {
     skipClassSearch.current = true;
+    skipOrderSearch.current = true;
+    skipAllianceSearch.current = true;
     setVegClass(nameWithoutAuthority);
     setVegClassCode(code);
     setShowClassSuggestions(false);
+    setVegOrder('');
+    setVegAlliance('');
+    setShowOrderSuggestions(false);
+    setShowAllianceSuggestions(false);
   };
 
   const selectOrderSuggestion = (nameWithoutAuthority) => {
@@ -776,12 +782,13 @@ export default function HabitatUpload() {
             id="vegClass"
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={vegClass}
-            onChange={(e) => { setVegClass(e.target.value); setVegClassCode(''); }}
+            onChange={(e) => { setVegClass(e.target.value); setVegClassCode(''); setVegOrder(''); setVegAlliance(''); setShowOrderSuggestions(false); setShowAllianceSuggestions(false); }}
+            onBlur={() => setShowClassSuggestions(false)}
             placeholder="Search for a vegetation class..."
             required
           />
           {showClassSuggestions && classSuggestions.length > 0 && (
-            <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+            <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto" onMouseDown={(e) => e.preventDefault()}>
               {classSuggestions.map((unit) => (
                 <li
                   key={unit._id}
@@ -807,10 +814,11 @@ export default function HabitatUpload() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={vegOrder}
             onChange={(e) => setVegOrder(e.target.value)}
+            onBlur={() => setShowOrderSuggestions(false)}
             placeholder="Search for a vegetation order..."
           />
           {showOrderSuggestions && orderSuggestions.length > 0 && (
-            <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+            <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto" onMouseDown={(e) => e.preventDefault()}>
               {orderSuggestions.map((unit) => (
                 <li
                   key={unit._id}
@@ -836,10 +844,11 @@ export default function HabitatUpload() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={vegAlliance}
             onChange={(e) => setVegAlliance(e.target.value)}
+            onBlur={() => setShowAllianceSuggestions(false)}
             placeholder="Search for a vegetation alliance..."
           />
           {showAllianceSuggestions && allianceSuggestions.length > 0 && (
-            <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+            <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto" onMouseDown={(e) => e.preventDefault()}>
               {allianceSuggestions.map((unit) => (
                 <li
                   key={unit._id}
