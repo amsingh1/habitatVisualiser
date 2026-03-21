@@ -29,12 +29,17 @@ export default function HabitatUpload() {
   const [isDragging, setIsDragging] = useState(false);
 
   // EU vegetation hierarchy autocomplete state
-  const [classSuggestions, setClassSuggestions] = useState([]);
   const [showClassSuggestions, setShowClassSuggestions] = useState(false);
-  const [orderSuggestions, setOrderSuggestions] = useState([]);
   const [showOrderSuggestions, setShowOrderSuggestions] = useState(false);
-  const [allianceSuggestions, setAllianceSuggestions] = useState([]);
   const [showAllianceSuggestions, setShowAllianceSuggestions] = useState(false);
+  // Full option lists loaded on click (filtered client-side while typing)
+  const [allClassOptions, setAllClassOptions] = useState([]);
+  const [allOrderOptions, setAllOrderOptions] = useState([]);
+  const [allAllianceOptions, setAllAllianceOptions] = useState([]);
+  // Last confirmed valid selections (used to revert if user types a non-list value)
+  const [lastValidClass, setLastValidClass] = useState('');
+  const [lastValidOrder, setLastValidOrder] = useState('');
+  const [lastValidAlliance, setLastValidAlliance] = useState('');
   const [exifData, setExifData] = useState(null);
   const [useExifData, setUseExifData] = useState(true);
   const [isLoadingExif, setIsLoadingExif] = useState(false);
@@ -60,10 +65,6 @@ export default function HabitatUpload() {
   const [existingImages, setExistingImages] = useState([]);
   const [showMap, setShowMap] = useState(false);
   const fileInputRef = useRef(null);
-  // Refs to skip search useEffects when a suggestion was just selected
-  const skipClassSearch = useRef(false);
-  const skipOrderSearch = useRef(false);
-  const skipAllianceSearch = useRef(false);
 
   // Fetch existing habitat data if editing
   useEffect(() => {
@@ -87,9 +88,13 @@ export default function HabitatUpload() {
         }
         
         // Set form values
-        setVegClass(habitat.vegClass || habitat.habitatName || '');
+        const className = habitat.vegClass || habitat.habitatName || '';
+        setVegClass(className);
+        setLastValidClass(className);
         setVegOrder(habitat.vegOrder || '');
+        setLastValidOrder(habitat.vegOrder || '');
         setVegAlliance(habitat.vegAlliance || '');
+        setLastValidAlliance(habitat.vegAlliance || '');
         setState(habitat.state || '');
         setCountry(habitat.country || '');
         setDate(habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : '');
@@ -97,6 +102,29 @@ export default function HabitatUpload() {
         setDominantSpecies1(habitat.dominantSpecies1 || '');
         setDominantSpecies2(habitat.dominantSpecies2 || '');
         setDominantSpecies3(habitat.dominantSpecies3 || '');
+
+        // Resolve the class code so Order/Alliance dropdowns work in edit mode
+        if (className) {
+          try {
+            const classResp = await fetch(`/api/eu-veg-units/search?type=class&query=${encodeURIComponent(className)}`);
+            if (classResp.ok) {
+              const classData = await classResp.json();
+              const match = classData.units?.find(u => u.name_without_authority === className);
+              if (match) {
+                setVegClassCode(match.code);
+                // Preload order/alliance options for the existing class
+                const loadOpts = async (type, setOptions, code) => {
+                  try {
+                    const r = await fetch(`/api/eu-veg-units/search?type=${type}&fetchAll=true&classCode=${encodeURIComponent(code)}`);
+                    if (r.ok) { const d = await r.json(); setOptions(d.units || []); }
+                  } catch {}
+                };
+                loadOpts('order', setAllOrderOptions, match.code);
+                loadOpts('alliance', setAllAllianceOptions, match.code);
+              }
+            }
+          } catch {}
+        }
         
         // Parse GPS coordinate if it exists
         if (habitat.gpsCoordinate) {
@@ -220,48 +248,20 @@ export default function HabitatUpload() {
     extractExifData();
   }, [selectedFiles, useExifData]); // Removed exifData from dependencies
 
-  // Shared helper to search EU veg units by type
-  const searchVegUnits = async (query, type, setSuggestions, setShow, classCode = '') => {
-    if (query.trim().length < 2) {
-      setSuggestions([]);
-      setShow(false);
-      return;
-    }
+  // Load all options for a vegetation hierarchy level (used on click/focus)
+  const loadAllVegUnits = async (type, setOptions, classCode = '') => {
     try {
-      let url = `/api/eu-veg-units/search?type=${type}&query=${encodeURIComponent(query)}`;
+      let url = `/api/eu-veg-units/search?type=${type}&fetchAll=true`;
       if (classCode) url += `&classCode=${encodeURIComponent(classCode)}`;
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`Error: ${response.status}`);
+      if (!response.ok) return;
       const data = await response.json();
-      setSuggestions(data.units);
-      setShow(true);
+      setOptions(data.units || []);
     } catch (err) {
-      console.error('Error searching EU Veg Units:', err);
-      setSuggestions([]);
-      setShow(false);
+      console.error('Error loading EU Veg Units:', err);
+      setOptions([]);
     }
   };
-
-  useEffect(() => {
-    if (skipClassSearch.current) { skipClassSearch.current = false; return; }
-    const timer = setTimeout(() =>
-      searchVegUnits(vegClass, 'class', setClassSuggestions, setShowClassSuggestions), 300);
-    return () => clearTimeout(timer);
-  }, [vegClass]);
-
-  useEffect(() => {
-    if (skipOrderSearch.current) { skipOrderSearch.current = false; return; }
-    const timer = setTimeout(() =>
-      searchVegUnits(vegOrder, 'order', setOrderSuggestions, setShowOrderSuggestions, vegClassCode), 300);
-    return () => clearTimeout(timer);
-  }, [vegOrder, vegClassCode]);
-
-  useEffect(() => {
-    if (skipAllianceSearch.current) { skipAllianceSearch.current = false; return; }
-    const timer = setTimeout(() =>
-      searchVegUnits(vegAlliance, 'alliance', setAllianceSuggestions, setShowAllianceSuggestions, vegClassCode), 300);
-    return () => clearTimeout(timer);
-  }, [vegAlliance, vegClassCode]);
 
   // Reverse geocode coordinates to get location info
   useEffect(() => {
@@ -413,27 +413,32 @@ export default function HabitatUpload() {
   };
 
   const selectClassSuggestion = (nameWithoutAuthority, code) => {
-    skipClassSearch.current = true;
-    skipOrderSearch.current = true;
-    skipAllianceSearch.current = true;
     setVegClass(nameWithoutAuthority);
+    setLastValidClass(nameWithoutAuthority);
     setVegClassCode(code);
     setShowClassSuggestions(false);
     setVegOrder('');
+    setLastValidOrder('');
     setVegAlliance('');
+    setLastValidAlliance('');
+    setAllOrderOptions([]);
+    setAllAllianceOptions([]);
     setShowOrderSuggestions(false);
     setShowAllianceSuggestions(false);
+    // Preload order and alliance options for the selected class
+    loadAllVegUnits('order', setAllOrderOptions, code);
+    loadAllVegUnits('alliance', setAllAllianceOptions, code);
   };
 
   const selectOrderSuggestion = (nameWithoutAuthority) => {
-    skipOrderSearch.current = true;
     setVegOrder(nameWithoutAuthority);
+    setLastValidOrder(nameWithoutAuthority);
     setShowOrderSuggestions(false);
   };
 
   const selectAllianceSuggestion = (nameWithoutAuthority) => {
-    skipAllianceSearch.current = true;
     setVegAlliance(nameWithoutAuthority);
+    setLastValidAlliance(nameWithoutAuthority);
     setShowAllianceSuggestions(false);
   };
 
@@ -782,23 +787,45 @@ export default function HabitatUpload() {
             id="vegClass"
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={vegClass}
-            onChange={(e) => { setVegClass(e.target.value); setVegClassCode(''); setVegOrder(''); setVegAlliance(''); setShowOrderSuggestions(false); setShowAllianceSuggestions(false); }}
-            onBlur={() => setShowClassSuggestions(false)}
-            placeholder="Search for a vegetation class..."
+            onChange={(e) => {
+              setVegClass(e.target.value);
+              setVegClassCode('');
+              setVegOrder('');
+              setLastValidOrder('');
+              setVegAlliance('');
+              setLastValidAlliance('');
+              setAllOrderOptions([]);
+              setAllAllianceOptions([]);
+              setShowOrderSuggestions(false);
+              setShowAllianceSuggestions(false);
+              setShowClassSuggestions(true);
+            }}
+            onFocus={() => {
+              if (allClassOptions.length === 0) loadAllVegUnits('class', setAllClassOptions);
+              setShowClassSuggestions(true);
+            }}
+            onBlur={() => {
+              const match = allClassOptions.find(u => u.name_without_authority === vegClass);
+              if (!match) setVegClass(lastValidClass);
+              setShowClassSuggestions(false);
+            }}
+            placeholder="Click to select a vegetation class..."
             required
           />
-          {showClassSuggestions && classSuggestions.length > 0 && (
+          {showClassSuggestions && (
             <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto" onMouseDown={(e) => e.preventDefault()}>
-              {classSuggestions.map((unit) => (
-                <li
-                  key={unit._id}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => selectClassSuggestion(unit.name_without_authority, unit.code)}
-                >
-                  <div className="font-medium">{unit.name_without_authority}</div>
-                  <div className="text-xs text-gray-500">Code: {unit.code}</div>
-                </li>
-              ))}
+              {allClassOptions
+                .filter(u => !vegClass || u.name_without_authority.toLowerCase().includes(vegClass.toLowerCase()))
+                .map((unit) => (
+                  <li
+                    key={unit._id}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => selectClassSuggestion(unit.name_without_authority, unit.code)}
+                  >
+                    <div className="font-medium">{unit.name_without_authority}</div>
+                    <div className="text-xs text-gray-500">Code: {unit.code}</div>
+                  </li>
+                ))}
             </ul>
           )}
         </div>
@@ -811,24 +838,38 @@ export default function HabitatUpload() {
           <input
             type="text"
             id="vegOrder"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${!vegClassCode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
             value={vegOrder}
-            onChange={(e) => setVegOrder(e.target.value)}
-            onBlur={() => setShowOrderSuggestions(false)}
-            placeholder="Search for a vegetation order..."
+            onChange={(e) => { setVegOrder(e.target.value); setShowOrderSuggestions(true); }}
+            onFocus={() => {
+              if (!vegClassCode) return;
+              if (allOrderOptions.length === 0) loadAllVegUnits('order', setAllOrderOptions, vegClassCode);
+              setShowOrderSuggestions(true);
+            }}
+            onBlur={() => {
+              if (vegOrder !== '') {
+                const match = allOrderOptions.find(u => u.name_without_authority === vegOrder);
+                if (!match) setVegOrder(lastValidOrder);
+              }
+              setShowOrderSuggestions(false);
+            }}
+            placeholder={vegClassCode ? 'Click to select a vegetation order...' : 'Select a vegetation class first'}
+            disabled={!vegClassCode}
           />
-          {showOrderSuggestions && orderSuggestions.length > 0 && (
+          {showOrderSuggestions && vegClassCode && (
             <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto" onMouseDown={(e) => e.preventDefault()}>
-              {orderSuggestions.map((unit) => (
-                <li
-                  key={unit._id}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => selectOrderSuggestion(unit.name_without_authority)}
-                >
-                  <div className="font-medium">{unit.name_without_authority}</div>
-                  <div className="text-xs text-gray-500">Code: {unit.code}</div>
-                </li>
-              ))}
+              {allOrderOptions
+                .filter(u => !vegOrder || u.name_without_authority.toLowerCase().includes(vegOrder.toLowerCase()))
+                .map((unit) => (
+                  <li
+                    key={unit._id}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => selectOrderSuggestion(unit.name_without_authority)}
+                  >
+                    <div className="font-medium">{unit.name_without_authority}</div>
+                    <div className="text-xs text-gray-500">Code: {unit.code}</div>
+                  </li>
+                ))}
             </ul>
           )}
         </div>
@@ -841,24 +882,38 @@ export default function HabitatUpload() {
           <input
             type="text"
             id="vegAlliance"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${!vegClassCode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
             value={vegAlliance}
-            onChange={(e) => setVegAlliance(e.target.value)}
-            onBlur={() => setShowAllianceSuggestions(false)}
-            placeholder="Search for a vegetation alliance..."
+            onChange={(e) => { setVegAlliance(e.target.value); setShowAllianceSuggestions(true); }}
+            onFocus={() => {
+              if (!vegClassCode) return;
+              if (allAllianceOptions.length === 0) loadAllVegUnits('alliance', setAllAllianceOptions, vegClassCode);
+              setShowAllianceSuggestions(true);
+            }}
+            onBlur={() => {
+              if (vegAlliance !== '') {
+                const match = allAllianceOptions.find(u => u.name_without_authority === vegAlliance);
+                if (!match) setVegAlliance(lastValidAlliance);
+              }
+              setShowAllianceSuggestions(false);
+            }}
+            placeholder={vegClassCode ? 'Click to select a vegetation alliance...' : 'Select a vegetation class first'}
+            disabled={!vegClassCode}
           />
-          {showAllianceSuggestions && allianceSuggestions.length > 0 && (
+          {showAllianceSuggestions && vegClassCode && (
             <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto" onMouseDown={(e) => e.preventDefault()}>
-              {allianceSuggestions.map((unit) => (
-                <li
-                  key={unit._id}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => selectAllianceSuggestion(unit.name_without_authority)}
-                >
-                  <div className="font-medium">{unit.name_without_authority}</div>
-                  <div className="text-xs text-gray-500">Code: {unit.code}</div>
-                </li>
-              ))}
+              {allAllianceOptions
+                .filter(u => !vegAlliance || u.name_without_authority.toLowerCase().includes(vegAlliance.toLowerCase()))
+                .map((unit) => (
+                  <li
+                    key={unit._id}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => selectAllianceSuggestion(unit.name_without_authority)}
+                  >
+                    <div className="font-medium">{unit.name_without_authority}</div>
+                    <div className="text-xs text-gray-500">Code: {unit.code}</div>
+                  </li>
+                ))}
             </ul>
           )}
         </div>
