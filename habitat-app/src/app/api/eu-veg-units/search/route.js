@@ -48,10 +48,13 @@ export async function GET(request) {
       dbQuery.code = { $regex: CODE_PATTERNS[type].source };
     }
 
-    // Find units matching the query
+    // Find units matching the query.
+    // When fetching all class options, no limit is applied so every class is available.
+    // Order/alliance fetches retain a 300-item cap since they are always scoped to a class.
+    const applyLimit = !fetchAll || type !== 'class';
     const units = await EuVegUnits.find(dbQuery)
       .select('_id code EVC_code name_without_authority')
-      .limit(fetchAll ? 300 : 10)
+      .limit(applyLimit ? (fetchAll ? 300 : 10) : 0)
       .sort({ code: 1 });
     
     // Return the results
