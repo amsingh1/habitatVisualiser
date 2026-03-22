@@ -47,8 +47,9 @@ export default function HabitatUpload() {
   
   // Form state
   const [vegClass, setVegClass] = useState('');
-  const [vegClassCode, setVegClassCode] = useState(''); // code of the selected class, used to filter order/alliance
+  const [vegClassCode, setVegClassCode] = useState(''); // code of the selected class
   const [vegOrder, setVegOrder] = useState('');
+  const [vegOrderCode, setVegOrderCode] = useState(''); // code of the selected order, used to filter alliances
   const [vegAlliance, setVegAlliance] = useState('');
   const [state, setState] = useState('');
   const [country, setCountry] = useState('');
@@ -103,27 +104,43 @@ export default function HabitatUpload() {
         setDominantSpecies2(habitat.dominantSpecies2 || '');
         setDominantSpecies3(habitat.dominantSpecies3 || '');
 
-        // Resolve the class code so Order/Alliance dropdowns work in edit mode
-        if (className) {
+        // Resolve class/order codes so dropdowns work correctly in edit mode
+        const resolveCode = async (name, type) => {
           try {
-            const classResp = await fetch(`/api/eu-veg-units/search?type=class&query=${encodeURIComponent(className)}`);
-            if (classResp.ok) {
-              const classData = await classResp.json();
-              const match = classData.units?.find(u => u.name_without_authority === className);
-              if (match) {
-                setVegClassCode(match.code);
-                // Preload order/alliance options for the existing class
-                const loadOpts = async (type, setOptions, code) => {
-                  try {
-                    const r = await fetch(`/api/eu-veg-units/search?type=${type}&fetchAll=true&classCode=${encodeURIComponent(code)}`);
-                    if (r.ok) { const d = await r.json(); setOptions(d.units || []); }
-                  } catch {}
-                };
-                loadOpts('order', setAllOrderOptions, match.code);
-                loadOpts('alliance', setAllAllianceOptions, match.code);
-              }
-            }
-          } catch {}
+            const r = await fetch(`/api/eu-veg-units/search?type=${type}&query=${encodeURIComponent(name)}`);
+            if (!r.ok) return null;
+            const d = await r.json();
+            return d.units?.find(u => u.name_without_authority === name) || null;
+          } catch { return null; }
+        };
+
+        const orderName = habitat.vegOrder || '';
+        const allianceName = habitat.vegAlliance || '';
+
+        // Resolve class code
+        const classMatch = className ? await resolveCode(className, 'class') : null;
+        if (classMatch) {
+          setVegClassCode(classMatch.code);
+          // Preload orders for this class
+          fetch(`/api/eu-veg-units/search?type=order&fetchAll=true&classCode=${encodeURIComponent(classMatch.code)}`)
+            .then(r => r.ok ? r.json() : null).then(d => d && setAllOrderOptions(d.units || [])).catch(() => {});
+        }
+
+        // Resolve order code and preload alliances scoped to that order
+        if (orderName) {
+          const orderMatch = await resolveCode(orderName, 'order');
+          if (orderMatch) {
+            setVegOrderCode(orderMatch.code);
+            fetch(`/api/eu-veg-units/search?type=alliance&fetchAll=true&orderCode=${encodeURIComponent(orderMatch.code)}`)
+              .then(r => r.ok ? r.json() : null).then(d => d && setAllAllianceOptions(d.units || [])).catch(() => {});
+          } else if (classMatch) {
+            // Fall back to class-scoped alliances
+            fetch(`/api/eu-veg-units/search?type=alliance&fetchAll=true&classCode=${encodeURIComponent(classMatch.code)}`)
+              .then(r => r.ok ? r.json() : null).then(d => d && setAllAllianceOptions(d.units || [])).catch(() => {});
+          }
+        } else if (classMatch) {
+          fetch(`/api/eu-veg-units/search?type=alliance&fetchAll=true&classCode=${encodeURIComponent(classMatch.code)}`)
+            .then(r => r.ok ? r.json() : null).then(d => d && setAllAllianceOptions(d.units || [])).catch(() => {});
         }
         
         // Parse GPS coordinate if it exists
@@ -248,11 +265,16 @@ export default function HabitatUpload() {
     extractExifData();
   }, [selectedFiles, useExifData]); // Removed exifData from dependencies
 
-  // Load all options for a vegetation hierarchy level (used on click/focus)
-  const loadAllVegUnits = async (type, setOptions, classCode = '') => {
+  // Load all options for a vegetation hierarchy level (used on click/focus).
+  // For alliances: orderCode takes priority over classCode for tighter filtering.
+  const loadAllVegUnits = async (type, setOptions, classCode = '', orderCode = '') => {
     try {
       let url = `/api/eu-veg-units/search?type=${type}&fetchAll=true`;
-      if (classCode) url += `&classCode=${encodeURIComponent(classCode)}`;
+      if (orderCode && type === 'alliance') {
+        url += `&orderCode=${encodeURIComponent(orderCode)}`;
+      } else if (classCode) {
+        url += `&classCode=${encodeURIComponent(classCode)}`;
+      }
       const response = await fetch(url);
       if (!response.ok) return;
       const data = await response.json();
@@ -261,6 +283,16 @@ export default function HabitatUpload() {
       console.error('Error loading EU Veg Units:', err);
       setOptions([]);
     }
+  };
+
+  // Fetch a single unit by its exact code — used to auto-fill parent fields.
+  const lookupUnitByCode = async (code) => {
+    try {
+      const r = await fetch(`/api/eu-veg-units/search?code=${encodeURIComponent(code)}`);
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d.units?.[0] || null;
+    } catch { return null; }
   };
 
   // Reverse geocode coordinates to get location info
@@ -419,6 +451,7 @@ export default function HabitatUpload() {
     setShowClassSuggestions(false);
     setVegOrder('');
     setLastValidOrder('');
+    setVegOrderCode('');
     setVegAlliance('');
     setLastValidAlliance('');
     setAllOrderOptions([]);
@@ -430,16 +463,66 @@ export default function HabitatUpload() {
     loadAllVegUnits('alliance', setAllAllianceOptions, code);
   };
 
-  const selectOrderSuggestion = (nameWithoutAuthority) => {
+  // Selecting an order: store its code, auto-fill class if not set, re-filter alliances by order.
+  const selectOrderSuggestion = async (nameWithoutAuthority, code) => {
     setVegOrder(nameWithoutAuthority);
     setLastValidOrder(nameWithoutAuthority);
+    setVegOrderCode(code);
     setShowOrderSuggestions(false);
+    // Reset alliance when order changes
+    setVegAlliance('');
+    setLastValidAlliance('');
+    // Filter alliances by this specific order
+    loadAllVegUnits('alliance', setAllAllianceOptions, '', code);
+
+    // Auto-fill class if not already set — class code is the first 2 chars of the order code
+    const derivedClassCode = code.slice(0, 2);
+    if (!vegClassCode || vegClassCode !== derivedClassCode) {
+      const classUnit = allClassOptions.find(u => u.code === derivedClassCode)
+        || await lookupUnitByCode(derivedClassCode);
+      if (classUnit) {
+        setVegClass(classUnit.name_without_authority);
+        setLastValidClass(classUnit.name_without_authority);
+        setVegClassCode(classUnit.code);
+        if (allOrderOptions.length === 0) {
+          loadAllVegUnits('order', setAllOrderOptions, classUnit.code);
+        }
+      }
+    }
   };
 
-  const selectAllianceSuggestion = (nameWithoutAuthority) => {
+  // Selecting an alliance: auto-fill order and class from the alliance code.
+  const selectAllianceSuggestion = async (nameWithoutAuthority, code) => {
     setVegAlliance(nameWithoutAuthority);
     setLastValidAlliance(nameWithoutAuthority);
     setShowAllianceSuggestions(false);
+
+    // Alliance code structure: AB12C → order = AB12, class = AB
+    const derivedOrderCode = code.slice(0, 4);
+    const derivedClassCode = code.slice(0, 2);
+
+    // Auto-fill order
+    const orderUnit = allOrderOptions.find(u => u.code === derivedOrderCode)
+      || await lookupUnitByCode(derivedOrderCode);
+    if (orderUnit) {
+      setVegOrder(orderUnit.name_without_authority);
+      setLastValidOrder(orderUnit.name_without_authority);
+      setVegOrderCode(orderUnit.code);
+      // Reload alliance options scoped to this order
+      loadAllVegUnits('alliance', setAllAllianceOptions, '', orderUnit.code);
+    }
+
+    // Auto-fill class
+    const classUnit = allClassOptions.find(u => u.code === derivedClassCode)
+      || await lookupUnitByCode(derivedClassCode);
+    if (classUnit) {
+      setVegClass(classUnit.name_without_authority);
+      setLastValidClass(classUnit.name_without_authority);
+      setVegClassCode(classUnit.code);
+      if (allOrderOptions.length === 0) {
+        loadAllVegUnits('order', setAllOrderOptions, classUnit.code);
+      }
+    }
   };
 
   const removeImage = (index) => {
@@ -792,6 +875,7 @@ export default function HabitatUpload() {
               setVegClassCode('');
               setVegOrder('');
               setLastValidOrder('');
+              setVegOrderCode('');
               setVegAlliance('');
               setLastValidAlliance('');
               setAllOrderOptions([]);
@@ -838,25 +922,33 @@ export default function HabitatUpload() {
           <input
             type="text"
             id="vegOrder"
-            className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${!vegClassCode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={vegOrder}
-            onChange={(e) => { setVegOrder(e.target.value); setShowOrderSuggestions(true); }}
+            onChange={(e) => {
+              setVegOrder(e.target.value);
+              setVegOrderCode('');
+              setVegAlliance('');
+              setLastValidAlliance('');
+              setAllAllianceOptions([]);
+              setShowOrderSuggestions(true);
+            }}
             onFocus={() => {
-              if (!vegClassCode) return;
-              if (allOrderOptions.length === 0) loadAllVegUnits('order', setAllOrderOptions, vegClassCode);
+              // Load orders scoped to class if selected, otherwise all orders
+              if (allOrderOptions.length === 0) {
+                loadAllVegUnits('order', setAllOrderOptions, vegClassCode);
+              }
               setShowOrderSuggestions(true);
             }}
             onBlur={() => {
-              if (vegOrder !== '') {
+              if (vegOrder !== '' && allOrderOptions.length > 0) {
                 const match = allOrderOptions.find(u => u.name_without_authority === vegOrder);
                 if (!match) setVegOrder(lastValidOrder);
               }
               setShowOrderSuggestions(false);
             }}
-            placeholder={vegClassCode ? 'Click to select a vegetation order...' : 'Select a vegetation class first'}
-            disabled={!vegClassCode}
+            placeholder={vegClassCode ? 'Click to select a vegetation order...' : 'Type or select — class will be auto-filled'}
           />
-          {showOrderSuggestions && vegClassCode && (
+          {showOrderSuggestions && (
             <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto" onMouseDown={(e) => e.preventDefault()}>
               {allOrderOptions
                 .filter(u => !vegOrder || u.name_without_authority.toLowerCase().includes(vegOrder.toLowerCase()))
@@ -864,7 +956,7 @@ export default function HabitatUpload() {
                   <li
                     key={unit._id}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => selectOrderSuggestion(unit.name_without_authority)}
+                    onClick={() => selectOrderSuggestion(unit.name_without_authority, unit.code)}
                   >
                     <div className="font-medium">{unit.name_without_authority}</div>
                     <div className="text-xs text-gray-500">Code: {unit.code}</div>
@@ -882,25 +974,32 @@ export default function HabitatUpload() {
           <input
             type="text"
             id="vegAlliance"
-            className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${!vegClassCode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={vegAlliance}
             onChange={(e) => { setVegAlliance(e.target.value); setShowAllianceSuggestions(true); }}
             onFocus={() => {
-              if (!vegClassCode) return;
-              if (allAllianceOptions.length === 0) loadAllVegUnits('alliance', setAllAllianceOptions, vegClassCode);
+              // Load alliances scoped to order (tightest), then class, then all
+              if (allAllianceOptions.length === 0) {
+                loadAllVegUnits('alliance', setAllAllianceOptions, vegClassCode, vegOrderCode);
+              }
               setShowAllianceSuggestions(true);
             }}
             onBlur={() => {
-              if (vegAlliance !== '') {
+              if (vegAlliance !== '' && allAllianceOptions.length > 0) {
                 const match = allAllianceOptions.find(u => u.name_without_authority === vegAlliance);
                 if (!match) setVegAlliance(lastValidAlliance);
               }
               setShowAllianceSuggestions(false);
             }}
-            placeholder={vegClassCode ? 'Click to select a vegetation alliance...' : 'Select a vegetation class first'}
-            disabled={!vegClassCode}
+            placeholder={
+              vegOrderCode
+                ? 'Click to select a vegetation alliance (filtered by order)...'
+                : vegClassCode
+                  ? 'Click to select a vegetation alliance (filtered by class)...'
+                  : 'Type or select — order and class will be auto-filled'
+            }
           />
-          {showAllianceSuggestions && vegClassCode && (
+          {showAllianceSuggestions && (
             <ul className="absolute z-10 bg-white w-full mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto" onMouseDown={(e) => e.preventDefault()}>
               {allAllianceOptions
                 .filter(u => !vegAlliance || u.name_without_authority.toLowerCase().includes(vegAlliance.toLowerCase()))
@@ -908,7 +1007,7 @@ export default function HabitatUpload() {
                   <li
                     key={unit._id}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => selectAllianceSuggestion(unit.name_without_authority)}
+                    onClick={() => selectAllianceSuggestion(unit.name_without_authority, unit.code)}
                   >
                     <div className="font-medium">{unit.name_without_authority}</div>
                     <div className="text-xs text-gray-500">Code: {unit.code}</div>
