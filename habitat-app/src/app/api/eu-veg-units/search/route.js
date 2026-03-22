@@ -14,8 +14,9 @@ export async function GET(request) {
   const query     = searchParams.get('query');
   const type      = searchParams.get('type');      // 'class' | 'order' | 'alliance'
   const classCode = searchParams.get('classCode'); // optional: filter order/alliance by parent class code
+  const fetchAll  = searchParams.get('fetchAll') === 'true'; // load all options (no text filter)
 
-  if (!query || query.trim().length < 2) {
+  if (!fetchAll && (!query || query.trim().length < 2)) {
     return NextResponse.json(
       { message: 'Query must be at least 2 characters' },
       { status: 400 }
@@ -29,12 +30,15 @@ export async function GET(request) {
       if (!MONGODB_URI) {
         throw new Error('MONGODB_URI is not defined in environment variables');
       }
-      
+
       await mongoose.connect(MONGODB_URI);
     }
-    
-    // Build query: filter by name and, when type is given, by code pattern
-    const dbQuery = { name_without_authority: { $regex: '^' + query, $options: 'i' } };
+
+    // Build query: filter by name (when not fetchAll) and, when type is given, by code pattern
+    const dbQuery = {};
+    if (!fetchAll && query) {
+      dbQuery.name_without_authority = { $regex: '^' + query, $options: 'i' };
+    }
     if (classCode && (type === 'order' || type === 'alliance')) {
       // Filter order/alliance by the selected class code prefix
       const escaped = classCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -43,11 +47,14 @@ export async function GET(request) {
     } else if (type && CODE_PATTERNS[type]) {
       dbQuery.code = { $regex: CODE_PATTERNS[type].source };
     }
-    
-    // Find units matching the query
+
+    // Find units matching the query.
+    // When fetching all class options, no limit is applied so every class is available.
+    // Order/alliance fetches retain a 300-item cap since they are always scoped to a class.
+    const applyLimit = !fetchAll || type !== 'class';
     const units = await EuVegUnits.find(dbQuery)
       .select('_id code EVC_code name_without_authority')
-      .limit(10)
+      .limit(applyLimit ? (fetchAll ? 300 : 10) : 0)
       .sort({ code: 1 });
     
     // Return the results
