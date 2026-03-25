@@ -1,12 +1,15 @@
 # Base image
-FROM node:18-alpine
+FROM node:20-alpine
+
+# Install pnpm
+RUN npm install -g pnpm
 
 # Create app directory
 WORKDIR /app
 
-# Install dependencies
-COPY package.json package-lock.json* ./
-RUN npm install
+# Install dependencies using pnpm lockfile for reproducible installs
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -17,10 +20,10 @@ COPY .env.local .env.local
 RUN mkdir -p /app/public/uploads /app/uploads && chmod -R 777 /app/public/uploads /app/uploads
 
 # Build the application
-RUN npm run build
+RUN pnpm run build
 
 # Expose the port the app will run on
 EXPOSE 3001
 
 # Start the application
-CMD ["npx", "next", "start", "-H", "0.0.0.0", "-p", "3001"]
+CMD ["pnpm", "next", "start", "-H", "0.0.0.0", "-p", "3001"]

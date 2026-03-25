@@ -11,6 +11,14 @@ import ConfirmationModal from '../ui/ConfirmationModal';
 // Create a fetcher function
 const fetcher = (...args) => fetch(...args).then(res => res.json());
 
+// Normalize image URLs: fix Cloudinary double extensions (.png.png) and skip legacy local /uploads/ paths
+function normalizeImageUrl(url) {
+  if (!url) return null;
+  if (url.startsWith('/uploads/')) return null;
+  // Fix double extension e.g. .png.png → .png
+  return url.replace(/(\.[^./?#]+)\1$/, '$1');
+}
+
 export default function HabitatList({ dataType = 'habitats', userId = null }) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -376,9 +384,9 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
           className="relative w-full aspect-square overflow-hidden"
           onClick={() => isSelectionMode ? toggleHabitatSelection(habitat) : openDetails(habitat)}
         >
-          {habitat.imageUrl && habitat.imageUrl.length > 0 && (
+          {habitat.imageUrl && normalizeImageUrl(habitat.imageUrl[0]) && (
             <Image
-              src={habitat.imageUrl[0]}
+              src={normalizeImageUrl(habitat.imageUrl[0])}
               alt={`${habitat.habitatName}`}
               fill
               className="object-cover hover:scale-105 transition-transform duration-300"
@@ -492,22 +500,26 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
 )}
 
       {/* Modal with image slider/carousel - Higher Z-index */}
-      {selectedHabitat && selectedHabitat.imageUrl && selectedHabitat.imageUrl.length > 0 && (
+      {selectedHabitat && selectedHabitat.imageUrl && selectedHabitat.imageUrl.map(normalizeImageUrl).filter(Boolean).length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+          {(() => {
+            const validUrls = selectedHabitat.imageUrl.map(normalizeImageUrl).filter(Boolean);
+            const safeIndex = Math.min(currentImageIndex, validUrls.length - 1);
+            return (
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
             <div className="relative">
               {/* Main image carousel */}
               <div className="relative h-[80vh] w-full">
                 <Image
-                  src={selectedHabitat.imageUrl[currentImageIndex]}
-                  alt={`${selectedHabitat.habitatName} - Image ${currentImageIndex + 1}`}
+                  src={validUrls[safeIndex]}
+                  alt={`${selectedHabitat.habitatName} - Image ${safeIndex + 1}`}
                   fill
                   className="object-contain"
                   priority
                 />
                 
                 {/* Navigation arrows */}
-                {selectedHabitat.imageUrl.length > 1 && (
+                {validUrls.length > 1 && (
                   <>
                     <button 
                       onClick={(e) => { e.stopPropagation(); goToPrevImage(); }}
@@ -530,7 +542,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                 
                 {/* Image counter - more subtle */}
                 <div className="absolute bottom-4 right-4 bg-black bg-opacity-30 text-white px-2 py-0.5 rounded-full text-xs">
-                  {currentImageIndex + 1} / {selectedHabitat.imageUrl.length}
+                  {safeIndex + 1} / {validUrls.length}
                 </div>
                 
                 {/* Action buttons for owner */}
@@ -585,14 +597,14 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
               </div>
               
               {/* Thumbnail strip */}
-              {selectedHabitat.imageUrl.length > 1 && (
+              {validUrls.length > 1 && (
                 <div className="bg-gray-100 p-2 flex overflow-x-auto">
-                  {selectedHabitat.imageUrl.map((url, index) => (
+                  {validUrls.map((url, index) => (
                     <div 
                       key={index} 
                       onClick={(e) => { e.stopPropagation(); goToImage(index); }}
                       className={`relative h-16 w-16 flex-shrink-0 mx-1 cursor-pointer ${
-                        currentImageIndex === index 
+                        safeIndex === index 
                           ? 'ring-2 ring-blue-500' 
                           : 'hover:opacity-80'
                       }`}
@@ -609,6 +621,8 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
               )}
             </div>
           </div>
+            );
+          })()}
         </div>
       )}
 

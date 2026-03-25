@@ -33,4 +33,4 @@ euVegUnitSchema.index({ EVC_code: 1 });
 
 const EuVegUnits = mongoose.models.eu_veg_units || mongoose.model('eu_veg_units', euVegUnitSchema);
 
-module.exports = EuVegUnits;
+export default EuVegUnits;

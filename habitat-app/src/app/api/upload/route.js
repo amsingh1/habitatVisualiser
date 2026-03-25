@@ -36,8 +36,9 @@ export async function POST(req) {
         const base64File = buffer.toString('base64');
         const dataURI = `data:${file.type};base64,${base64File}`;
         
-        // Generate a unique public_id using uuid
-        const uniqueFilename = `${uuidv4()}_${file.name.replace(/\s/g, '_')}`;
+        // Generate a unique public_id using uuid (strip extension to avoid double extension in Cloudinary URL)
+        const nameWithoutExt = file.name.replace(/\s/g, '_').replace(/\.[^/.]+$/, '');
+        const uniqueFilename = `${uuidv4()}_${nameWithoutExt}`;
         
         // Upload to Cloudinary
         const result = await cloudinary.uploader.upload(dataURI, {
