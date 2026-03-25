@@ -45,7 +45,7 @@ export async function POST(req) {
     // Prepare data for saving
     const habitatData = {
       gpsCoordinate,
-      habitatName: vegClass || habitatName || '',
+      habitatName: vegAlliance || vegOrder || vegClass || habitatName || '',
       state,
       country,
       date: date || new Date(),
@@ -333,8 +333,10 @@ export async function PUT(req) {
     
     // Prepare data for updating
     const resolvedVegClass = vegClass !== undefined ? vegClass : existingHabitat.vegClass;
+    const resolvedVegOrder = vegOrder !== undefined ? vegOrder : existingHabitat.vegOrder;
+    const resolvedVegAlliance = vegAlliance !== undefined ? vegAlliance : existingHabitat.vegAlliance;
     const updateData = {
-      habitatName: resolvedVegClass || (habitatName !== undefined ? habitatName : existingHabitat.habitatName),
+      habitatName: resolvedVegAlliance || resolvedVegOrder || resolvedVegClass || (habitatName !== undefined ? habitatName : existingHabitat.habitatName),
       state: state !== undefined ? state : existingHabitat.state,
       country: country !== undefined ? country : existingHabitat.country,
       date: date !== undefined ? date : existingHabitat.date,
