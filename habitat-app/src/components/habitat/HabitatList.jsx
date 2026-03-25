@@ -416,7 +416,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
         {/* Habitat info */}
         <div className="p-4 flex flex-col flex-grow">
           <div>
-            <h3 className="text-lg font-semibold">{habitat.habitatName}</h3>
+            <h3 className="text-lg font-semibold">{habitat.vegAlliance || habitat.vegOrder || habitat.vegClass || habitat.habitatName}</h3>
             <p className="text-gray-600">{habitat.state}, {habitat.country}</p>
             <p className="text-gray-500 text-sm">{formatDate(habitat.date)}</p>
             {habitat.gpsCoordinate && <p className="text-gray-500 text-sm mt-2">Coordinates: {habitat.gpsCoordinate.split(',').map(n => parseFloat(n).toFixed(2)).join(', ')}</p>}
