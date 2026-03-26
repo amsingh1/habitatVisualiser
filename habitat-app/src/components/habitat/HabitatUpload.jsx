@@ -228,8 +228,8 @@ export default function HabitatUpload() {
         if (foundUsefulExif && extractedData) {
           // Populate GPS coordinates if available
           if (extractedData.latitude && extractedData.longitude) {
-            setLatitude(extractedData.latitude.toFixed(2));
-            setLongitude(extractedData.longitude.toFixed(2));
+            setLatitude(extractedData.latitude.toFixed(6));
+            setLongitude(extractedData.longitude.toFixed(6));
           }
             
           // Populate date if available
@@ -1118,7 +1118,6 @@ export default function HabitatUpload() {
           {showMap && (
             <div className="border border-gray-300 rounded-md mt-2 overflow-hidden" style={{ height: '400px' }}>
               <MapSelector 
-                key={`${latitude},${longitude}`}
                 currentCoordinate={latitude && longitude ? `${latitude},${longitude}` : ''} 
                 onSelectCoordinate={(value, stateValue, countryValue) => {
                   const coords = value.split(',');

@@ -47,10 +47,22 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
       dragging: true
     });
 
-    // Add tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    // Define base layers
+    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19
+    });
+
+    const aerialLayer = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        attribution: '&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        maxZoom: 19
+      }
+    );
+
+    // Street map on by default
+    streetLayer.addTo(map);
 
     // Add initial marker
     if (currentCoordinate) {
@@ -59,7 +71,8 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
         markerRef.current = L.marker(parts).addTo(map);
       }
     }
-     // Function to get only state and country from coordinates
+
+    // Function to get only state and country from coordinates
     const getLocationName = async (lat, lng) => {
       try {
         const response = await fetch(
@@ -69,7 +82,7 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
         
         if (data.address) {
           // Extract just the state/region and country
-          const state =   data.address.village || data.address.municipality || data.address.county  || data.address.state || '';
+          const state = data.address.village || data.address.municipality || data.address.county || data.address.state || '';
           const country = data.address.country || '';
           
           if (state && country) {
@@ -91,9 +104,10 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
     // Handle click to set new coordinate
     map.on('click', async (e) => {
       isSelectingRef.current = true;
+
       const { lat, lng } = e.latlng;
-      const formattedLat = parseFloat(lat.toFixed(2));
-      const formattedLng = parseFloat(lng.toFixed(2));
+      const formattedLat = parseFloat(lat.toFixed(6));
+      const formattedLng = parseFloat(lng.toFixed(6));
 
       // Remove old marker
       if (markerRef.current) {
@@ -104,7 +118,7 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
       markerRef.current = L.marker([formattedLat, formattedLng]).addTo(map);
 
       // Get location name
-     const locationName = await getLocationName(formattedLat, formattedLng);
+      const locationName = await getLocationName(formattedLat, formattedLng);
 
       // Parse the location to extract state and country
       const locationParts = locationName.split(', ');
@@ -122,14 +136,22 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
       }, 100);
     });
 
-    // Instruction box
-    const info = L.control();
+    // Instruction box with compact positioning to avoid overlap
+    const info = L.control({ position: 'bottomleft' });
     info.onAdd = function () {
       const div = L.DomUtil.create('div', 'info');
-      div.innerHTML = '<div style="background: white; padding: 8px; border-radius: 4px; box-shadow: 0 1px 5px rgba(0,0,0,0.4); font-size: 14px;">Click anywhere on the map to select coordinates</div>';
+      div.style.cssText = 'background: white; padding: 6px 10px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); font-size: 11px; line-height: 1.3; max-width: 180px;';
+      div.innerHTML = 'Click anywhere on map to select coordinates';
       return div;
     };
     info.addTo(map);
+
+    // Layer switcher with better separation and collapsed by default for cleaner UI
+    L.control.layers(
+      { 'Street Map': streetLayer, 'Aerial Map': aerialLayer },
+      {},
+      { position: 'topright', collapsed: true }
+    ).addTo(map);
 
     // Save map instance
     mapInstanceRef.current = map;
