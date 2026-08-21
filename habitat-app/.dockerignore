@@ -2,9 +2,15 @@ node_modules
 .next
 .git
 .gitignore
-*.md
+.vscode
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.DS_Store
-public/uploads
+
+# secrets — must never be baked into the image
+.env
+.env.*
+
+# mongo dump data — restored via the mongodb service volume, not part of the app image
+mongo-dump/
+mongodb_dump*/
+
+README.md

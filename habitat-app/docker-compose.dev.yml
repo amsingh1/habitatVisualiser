@@ -1,0 +1,12 @@
+# Local-only override: builds the app image from source instead of pulling
+# it from Docker Hub. Use this yourself; devops should run docker-compose.yml
+# as-is.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  nextjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: habitat-app:dev

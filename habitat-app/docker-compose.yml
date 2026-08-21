@@ -1,10 +1,10 @@
-version: '3'
-
 services:
   nextjs-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # Built and pushed separately — see mongo-init/ and .env.local.example
+    # for the rest of what devops needs alongside this file. This image must
+    # be (re)built from THIS branch before deploying — it is not the same
+    # codebase as any previously pushed amsingh2/habitat-app image.
+    image: amsingh2/habitat-app:latest
     container_name: nextjs-app
     ports:
       - "3001:3001"
@@ -16,7 +16,8 @@ services:
       - ./public/uploads:/app/public/uploads
       - ./public/uploads:/uploads
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - app-network
@@ -26,9 +27,19 @@ services:
     container_name: mongodb
     volumes:
       - mongodb_data:/data/db
+      # Restore script + dump only run automatically the FIRST time the
+      # mongodb_data volume is empty (fresh DB). Safe to leave mounted.
+      - ./mongo-init/init-restore.sh:/docker-entrypoint-initdb.d/init-restore.sh:ro
+      - ./mongo-dump:/docker-entrypoint-initdb.d/dump:ro
 # No external port mapping needed
     # ports:
     #   - "27018:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks:
       - app-network
     restart: unless-stopped

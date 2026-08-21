@@ -14,9 +14,6 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Make sure .env.local is included
-COPY .env.local .env.local
-
 RUN mkdir -p /app/public/uploads /app/uploads && chmod -R 777 /app/public/uploads /app/uploads
 
 # Build the application
