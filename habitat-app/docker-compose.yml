@@ -4,10 +4,18 @@ services:
     # for the rest of what devops needs alongside this file. This image must
     # be (re)built from THIS branch before deploying — it is not the same
     # codebase as any previously pushed amsingh2/habitat-app image.
-    image: amsingh2/habitat-app:latest
+    # Pin a released tag per deploy so there is something to roll back to:
+    #   APP_IMAGE_TAG=1.0.0 docker compose up -d
+    # (read from the shell or a `.env` file beside this compose file — not
+    # from .env.local, which only sets variables inside the container.)
+    image: amsingh2/habitat-app:${APP_IMAGE_TAG:-latest}
     container_name: nextjs-app
     ports:
-      - "3001:3001"
+      # Bound to loopback: the app speaks plain HTTP and must not be reachable
+      # from the internet directly, bypassing TLS. The reverse proxy in front
+      # connects either via 127.0.0.1:3001 (proxy on the host) or over
+      # app-network (proxy in a container).
+      - "127.0.0.1:3001:3001"
     env_file:
       - .env.local
     environment:
@@ -23,7 +31,9 @@ services:
       - app-network
 
   mongodb:
-    image: mongo:latest
+    # Pinned: a future `docker compose pull` picking up a new major version
+    # would refuse to start against data files written by this one.
+    image: mongo:8.0
     container_name: mongodb
     volumes:
       - mongodb_data:/data/db

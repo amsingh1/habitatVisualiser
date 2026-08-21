@@ -106,7 +106,9 @@ export const authOptions = {
     strategy: 'jwt',
   },
 
-  debug: true,  // Enable debug messages
+  // Verbose auth logging in development only — it prints token and callback
+  // internals, which must not reach production logs.
+  debug: process.env.NODE_ENV === 'development',
   logger: {
     error: (code, metadata) => {
       console.error(code, metadata);

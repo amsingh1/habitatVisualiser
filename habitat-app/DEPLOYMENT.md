@@ -47,7 +47,18 @@ habitat-app/
 
 1. `cd habitat-app`
 2. (If private image) `docker login -u <username>`, paste the access token when prompted for a password.
-3. `docker compose pull` — pulls `amsingh2/habitat-app:latest` and `mongo:latest`.
+3. `docker compose pull` — pulls the app image and `mongo:8.0`.
+
+   To deploy a specific app version rather than `:latest` (recommended — it
+   gives you something to roll back to), set `APP_IMAGE_TAG` first:
+   ```
+   echo "APP_IMAGE_TAG=1.0.0" > .env
+   docker compose pull
+   ```
+   Note this is a plain `.env` beside `docker-compose.yml`, which Compose reads
+   to substitute variables in the file itself. It is *not* `.env.local`, which
+   only supplies environment variables inside the running container. Both files
+   can coexist; they do different jobs.
 4. `docker compose up -d`
 5. Check both containers came up healthy:
    ```
@@ -86,6 +97,47 @@ docker compose up -d
 This only replaces the `nextjs-app` container — the `mongodb` container and
 its data volume are untouched.
 
+## TLS / putting this behind a domain
+
+The app speaks **plain HTTP on port 3001** and is bound to `127.0.0.1`, so it
+is not reachable from the internet directly. That is deliberate: Next.js should
+not terminate TLS. A reverse proxy in front holds the certificate.
+
+```
+Internet ──HTTPS:443──> reverse proxy (holds cert) ──HTTP──> nextjs-app:3001
+```
+
+If this host already has TLS termination (an ingress, or a shared load
+balancer), point it at `127.0.0.1:3001` and skip the rest of this section.
+
+Otherwise Caddy is the least work — it obtains and renews Let's Encrypt
+certificates automatically. A complete `Caddyfile`:
+
+```
+habitat.example.org {
+    reverse_proxy 127.0.0.1:3001
+}
+```
+
+Two requirements, whichever proxy is used:
+
+1. **Forward the original protocol and host.** The proxy must send
+   `X-Forwarded-Proto: https` and preserve the `Host` header. Without them
+   NextAuth builds callback URLs with `http://` and Google sign-in fails with
+   a redirect-URI mismatch that looks nothing like a proxy problem. Caddy's
+   `reverse_proxy` does this by default; nginx needs it stated explicitly:
+   ```
+   proxy_set_header Host              $host;
+   proxy_set_header X-Forwarded-Proto $scheme;
+   proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+   ```
+2. **`NEXTAUTH_URL` in `.env.local` must exactly match the public HTTPS URL**
+   — same scheme, same hostname, no trailing slash.
+
+The app owner must also register `https://<your-domain>/api/auth/callback/google`
+as an authorized redirect URI in the Google Cloud console, or Google sign-in
+will fail on first use.
+
 ## Persistent data on this host
 
 - MongoDB data: named Docker volume `mongodb_data` (survives `docker compose down`, wiped only by `down -v`)
@@ -93,7 +145,8 @@ its data volume are untouched.
 
 ## Troubleshooting
 
-- **Port 3001 already in use**: another process is bound to it; either free it or change the `"3001:3001"` port mapping in `docker-compose.yml`.
+- **Port 3001 already in use**: another process is bound to it; either free it or change the `"127.0.0.1:3001:3001"` port mapping in `docker-compose.yml`.
+- **`curl` from another machine to port 3001 refuses to connect**: expected. The app is deliberately bound to loopback only (see TLS section) — reach it through the reverse proxy, or from the host itself.
 - **`mongodb` never becomes healthy**: `docker compose logs mongodb` — check for restore errors if this is a first start.
 - **App can't reach MongoDB**: confirm `.env.local` doesn't need editing — `MONGODB_URI` is already set correctly by `docker-compose.yml` for the two containers to reach each other over the internal `app-network`; you shouldn't need to change it.
 - **Auth (Google OAuth) not working**: check `NEXTAUTH_URL` in `.env.local` matches the real public URL of this deployment.
