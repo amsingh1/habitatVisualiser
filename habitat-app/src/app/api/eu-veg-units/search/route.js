@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import EuVegUnits from '@/models/eu_veg_units';
 import mongoose from 'mongoose';
+import escapeRegex from '@/lib/escapeRegex';
 
 // Code pattern filters for each vegetation hierarchy level
 const CODE_PATTERNS = {
@@ -45,7 +46,7 @@ export async function GET(request) {
       dbQuery.code = code;
     } else {
       if (!fetchAll && query) {
-        dbQuery.name_without_authority = { $regex: '^' + query, $options: 'i' };
+        dbQuery.name_without_authority = { $regex: '^' + escapeRegex(query), $options: 'i' };
       }
 
       if (orderCode && type === 'alliance') {

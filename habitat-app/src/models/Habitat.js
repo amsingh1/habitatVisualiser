@@ -75,6 +75,13 @@ const HabitatSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Indexes matching how the API actually queries this collection. These only
+// affect speed — query results are unchanged.
+HabitatSchema.index({ user: 1, createdAt: -1 }); // "my habitats", newest first
+HabitatSchema.index({ userEmail: 1 });           // fallback when session has no user id
+HabitatSchema.index({ createdAt: -1 });          // community/all listings, default sort
+HabitatSchema.index({ habitatName: 1 });         // prefix search + vegetation sort
+
 // Force delete cached model to ensure schema updates are applied
 if (mongoose.models.Habitat) {
   delete mongoose.models.Habitat;

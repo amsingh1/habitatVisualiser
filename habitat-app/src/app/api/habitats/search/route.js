@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Habitat from '@/models/Habitat';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import escapeRegex from '@/lib/escapeRegex';
 
 export async function GET(req) {
   try {
@@ -25,17 +26,17 @@ export async function GET(req) {
     const searchCriteria = {};
     
     if (query) {
-      const searchRegex = new RegExp('^' + query, 'i');
+      const searchRegex = new RegExp('^' + escapeRegex(query), 'i');
       searchCriteria.habitatName = { $regex: searchRegex };
     }
-    
+
     if (state) {
-      const stateRegex = new RegExp('^' + state, 'i');
+      const stateRegex = new RegExp('^' + escapeRegex(state), 'i');
       searchCriteria.state = { $regex: stateRegex };
     }
-    
+
     if (country) {
-      const countryRegex = new RegExp('^' + country, 'i');
+      const countryRegex = new RegExp('^' + escapeRegex(country), 'i');
       searchCriteria.country = { $regex: countryRegex };
     }
     

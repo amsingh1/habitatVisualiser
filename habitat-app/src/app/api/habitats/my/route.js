@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Habitat from '@/models/Habitat';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import escapeRegex from '@/lib/escapeRegex';
 
 export async function GET(req) {
   try {
@@ -51,26 +52,26 @@ export async function GET(req) {
       // Add conditions for each non-empty field
       if (advancedHabitatName && advancedHabitatName.trim()) {
         andConditions.push({
-          habitatName: { $regex: '^' + advancedHabitatName.trim(), $options: 'i' }
+          habitatName: { $regex: '^' + escapeRegex(advancedHabitatName.trim()), $options: 'i' }
         });
       }
 
       if (advancedCountry && advancedCountry.trim()) {
         andConditions.push({
-          country: { $regex: '^' + advancedCountry.trim(), $options: 'i' }
+          country: { $regex: '^' + escapeRegex(advancedCountry.trim()), $options: 'i' }
         });
       }
 
       if (advancedState && advancedState.trim()) {
         andConditions.push({
-          state: { $regex: '^' + advancedState.trim(), $options: 'i' }
+          state: { $regex: '^' + escapeRegex(advancedState.trim()), $options: 'i' }
         });
       }
 
       if (advancedGroup && advancedGroup.trim()) {
         // For group, search by habitatName
         andConditions.push({
-          habitatName: { $regex: '^' + advancedGroup.trim(), $options: 'i' }
+          habitatName: { $regex: '^' + escapeRegex(advancedGroup.trim()), $options: 'i' }
         });
       }
     }
