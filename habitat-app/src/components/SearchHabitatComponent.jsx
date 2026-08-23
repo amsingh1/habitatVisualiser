@@ -557,7 +557,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                 <select
                   value={selectedField}
                   onChange={handleFieldChange}
-                  className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent"
                 >
                   {availableFields.map(field => (
                     <option key={field.id} value={field.id}>
@@ -581,7 +581,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                   
                   <button 
                     type="submit" 
-                    className="flex items-center justify-center h-10 px-4 bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                    className="flex items-center justify-center h-10 px-4 bg-emerald-700 text-white hover:bg-emerald-800 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="11" cy="11" r="8"></circle>
@@ -643,7 +643,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
               <button
                 type="button"
                 onClick={toggleAdvancedMode}
-                className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                className="text-sm text-emerald-700 hover:text-emerald-900 font-medium"
               >
                 Advanced Search
               </button>
@@ -672,7 +672,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                   onChange={(e) => handleAdvancedInputChange('habitatName', e.target.value)}
                   onFocus={() => setActiveSuggestionField('habitatName')}
                   placeholder="Vegetation type..."
-                  className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
                 {advancedCriteria.habitatName && (
                   <button
@@ -720,7 +720,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                   onChange={(e) => handleAdvancedInputChange('country', e.target.value)}
                   onFocus={() => setActiveSuggestionField('country')}
                   placeholder="Country..."
-                  className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
                 {advancedCriteria.country && (
                   <button
@@ -759,7 +759,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                   onChange={(e) => handleAdvancedInputChange('state', e.target.value)}
                   onFocus={() => setActiveSuggestionField('state')}
                   placeholder="State/Region..."
-                  className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
                 {advancedCriteria.state && (
                   <button
@@ -799,7 +799,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                     onChange={(e) => handleAdvancedInputChange('userName', e.target.value)}
                     onFocus={() => setActiveSuggestionField('userName')}
                     placeholder="User Name..."
-                    className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                   />
                   {advancedCriteria.userName && (
                     <button
@@ -841,7 +841,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
               </button>
               <button
                 type="submit"
-                className="px-6 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                className="px-6 py-2 text-sm bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition-colors"
               >
                 Search
               </button>
@@ -856,7 +856,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
             <select
               value={selectedMonth}
               onChange={handleMonthChange}
-              className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent"
             >
               {months.map(month => (
                 <option key={month.value} value={month.value}>
@@ -871,7 +871,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
             <select
               value={selectedYear}
               onChange={handleYearChange}
-              className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent"
             >
               {years.map(year => (
                 <option key={year.value} value={year.value}>
@@ -886,7 +886,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
             <select
               value={selectedSort}
               onChange={handleSortChange}
-              className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent"
             >
               {sortOptions.map(option => (
                 <option key={option.value} value={option.value}>

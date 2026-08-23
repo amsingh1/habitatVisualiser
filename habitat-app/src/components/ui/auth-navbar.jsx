@@ -13,12 +13,15 @@ export default function AuthNavBar() {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const pathname = usePathname(); // Get current path
   
-  // Shared link styling
-  const linkClasses = "py-2 px-3 text-base font-semibold text-stone-700 hover:text-emerald-700";
-  const activeLinkClasses = "py-2 px-3 text-base font-semibold text-emerald-700"; // Style for active link
-  const signOutClasses = "bg-white py-2 px-4 border border-stone-300 rounded-md text-base font-medium text-stone-700 hover:border-emerald-600 hover:text-emerald-700";
-  const uploadButtonClasses = "py-2 px-4 border border-transparent rounded-md text-base font-semibold text-white bg-emerald-700 hover:bg-emerald-800";
-  const uploadButtonActiveClasses = "py-2 px-4 border border-transparent rounded-md text-base font-semibold text-white bg-emerald-800";
+  // Shared link styling.
+  // Three distinct visual roles so nothing reads as "selected" by accident:
+  //   nav link  -> light text on the green bar
+  //   active    -> solid white pill (unmistakably marks the current page)
+  //   action    -> amber button (Upload / Sign up), never a page state
+  const linkClasses = "py-2 px-3 rounded-md text-base font-medium text-emerald-50 hover:bg-white/10 hover:text-white transition-colors";
+  const activeLinkClasses = "py-2 px-3 rounded-md text-base font-semibold bg-white text-emerald-900"; // Style for active link
+  const signOutClasses = "bg-white/10 py-2 px-4 border border-white/25 rounded-md text-base font-medium text-white hover:bg-white/20";
+  const actionButtonClasses = "py-2 px-4 border border-transparent rounded-md text-base font-semibold text-emerald-950 bg-amber-400 hover:bg-amber-300 transition-colors";
 
   // Navigation links for logged-in users
   const navLinks = session && [
@@ -51,11 +54,17 @@ export default function AuthNavBar() {
   };
 
   return (
-    <header className="bg-emerald-50/60 border-b border-emerald-100">
+    <header className="bg-emerald-800">
       <nav className="w-full px-4 sm:px-6 lg:px-8" aria-label="Top">
-      <div className="w-full py-3 flex items-center justify-between border-b border-emerald-100 lg:border-none">
+      <div className="w-full py-3 flex items-center justify-between border-b border-white/15 lg:border-none">
   {/* Logo - positioned completely left */}
-  <Link href="/" className="text-stone-900 text-xl font-bold">
+  <Link href="/" className="flex items-center gap-2 text-white text-xl font-bold">
+    <span className="flex items-center justify-center h-8 w-8 rounded-lg bg-white/15">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 3C10 3 3 9 3 18c0 1.5 1 2 2 2 9 0 15-7 15-17Z" />
+        <path d="M8 18c3-3 6-6 11-11" />
+      </svg>
+    </span>
     Vegetation Types
   </Link>
 
@@ -63,7 +72,7 @@ export default function AuthNavBar() {
   <div className="flex items-center">
     {/* Mobile Menu Button */}
     <button
-      className="md:hidden text-stone-700 ml-auto"
+      className="md:hidden text-white ml-auto"
       onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
     >
       <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -73,18 +82,18 @@ export default function AuthNavBar() {
     
     {/* Desktop Navigation */}
     <div className="hidden md:flex items-center space-x-4">
-      {loading && <span className="text-stone-500">Loading...</span>}
+      {loading && <span className="text-emerald-100">Loading...</span>}
 
       {!loading && !session && (
         <>
           <Link href="/auth/signin" className={getLinkStyle('/auth/signin')}>Login</Link>
-          <Link href="/auth/signup" className={pathname === '/auth/signup' ? "bg-emerald-100 py-2 px-4 border border-transparent rounded-md text-base font-medium text-emerald-800" : uploadButtonClasses}>Sign up</Link>
+          <Link href="/auth/signup" className={pathname === '/auth/signup' ? activeLinkClasses : actionButtonClasses}>Sign up</Link>
         </>
       )}
 
       {!loading && session && (
         <>
-        <Link href="/habitats/upload" className={pathname === '/habitats/upload' ? uploadButtonActiveClasses : uploadButtonClasses}>
+        <Link href="/habitats/upload" className={pathname === '/habitats/upload' ? activeLinkClasses : actionButtonClasses}>
           Upload New Vegetation type
         </Link>
           {/* Nav Links */}
@@ -100,7 +109,7 @@ export default function AuthNavBar() {
               className="flex items-center space-x-2 cursor-pointer" 
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
             >
-              <span className="text-stone-700">
+              <span className="text-emerald-50">
                 {session.user.name || session.user.email}
               </span>
 
@@ -114,15 +123,15 @@ export default function AuthNavBar() {
                   />
                 </div>
               ) : (
-                <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                  <span className="text-sm font-medium text-emerald-700">
+                <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <span className="text-sm font-medium text-white">
                     {session.user.name ? session.user.name[0] : session.user.email[0]}
                   </span>
                 </div>
               )}
 
               {/* Dropdown indicator */}
-              <svg className="h-4 w-4 text-stone-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 text-emerald-100" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
@@ -151,13 +160,13 @@ export default function AuthNavBar() {
         
         {/* Mobile Menu Dropdown - for both logged in and logged out states */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-2 space-y-2 border-b border-emerald-100">
-            {loading && <span className="text-stone-500 px-4">Loading...</span>}
+          <div className="md:hidden py-2 space-y-2 border-b border-white/15">
+            {loading && <span className="text-emerald-100 px-4">Loading...</span>}
 
             {!loading && !session && (
               <div className="flex flex-col space-y-2 px-2">
                 <Link href="/auth/signin" className={getLinkStyle('/auth/signin')}>Login</Link>
-                <Link href="/auth/signup" className={pathname === '/auth/signup' ? "bg-emerald-100 py-2 px-4 border border-transparent rounded-md text-base font-medium text-emerald-800" : uploadButtonClasses}>Sign up</Link>
+                <Link href="/auth/signup" className={pathname === '/auth/signup' ? activeLinkClasses : actionButtonClasses}>Sign up</Link>
               </div>
             )}
 
@@ -170,16 +179,16 @@ export default function AuthNavBar() {
                       <Image src={session.user.image} alt={session.user.name || 'Profile'} fill className="rounded-full object-cover" />
                     </div>
                   ) : (
-                    <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center mr-2">
-                      <span className="text-sm font-medium text-emerald-700">
+                    <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center mr-2">
+                      <span className="text-sm font-medium text-white">
                         {session.user.name ? session.user.name[0] : session.user.email[0]}
                       </span>
                     </div>
                   )}
-                  <span className="text-stone-700">{session.user.name || session.user.email}</span>
+                  <span className="text-emerald-50">{session.user.name || session.user.email}</span>
                 </div>
 
-               <Link href="/habitats/upload" className={`block mx-2 ${pathname === '/habitats/upload' ? uploadButtonActiveClasses : uploadButtonClasses}`}>
+               <Link href="/habitats/upload" className={`block mx-2 ${pathname === '/habitats/upload' ? activeLinkClasses : actionButtonClasses}`}>
                 Upload New Vegetation type
               </Link>
                 {/* Mobile Nav Links */}

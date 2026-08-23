@@ -318,7 +318,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                 onClick={toggleSelectionMode}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   isSelectionMode
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'bg-emerald-700 text-white hover:bg-emerald-800'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -334,7 +334,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                   <div className="flex space-x-2">
                     <button
                       onClick={selectAllHabitats}
-                      className="text-sm text-blue-600 hover:text-blue-800"
+                      className="text-sm text-emerald-700 hover:text-emerald-900"
                     >
                       Select All
                     </button>
@@ -417,7 +417,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                 type="checkbox"
                 checked={selectedHabitats.some(h => h._id === habitat._id)}
                 onChange={() => toggleHabitatSelection(habitat)}
-                className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                className="w-5 h-5 text-emerald-700 bg-white border-2 border-gray-300 rounded focus:ring-emerald-600 focus:ring-2"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
@@ -458,7 +458,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                     e.stopPropagation(); // Prevent opening the modal
                     router.push(`/habitats/upload?id=${habitat._id}`);
                   }}
-                  className="text-xs text-gray-700 bg-transparent hover:bg-indigo-100 px-3 py-1.5 rounded-md flex items-center transition-colors"
+                  className="text-xs text-gray-700 bg-transparent hover:bg-emerald-100 px-3 py-1.5 rounded-md flex items-center transition-colors"
                   title="Edit vegetation type"
                 >
                   <svg
@@ -622,7 +622,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                       onClick={(e) => { e.stopPropagation(); goToImage(index); }}
                       className={`relative h-16 w-16 flex-shrink-0 mx-1 cursor-pointer ${
                         safeIndex === index 
-                          ? 'ring-2 ring-blue-500' 
+                          ? 'ring-2 ring-emerald-600' 
                           : 'hover:opacity-80'
                       }`}
                     >

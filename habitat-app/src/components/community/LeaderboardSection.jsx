@@ -124,7 +124,7 @@ function UserCard({ user, showTimestamp, scoreKey, scoreLabelSingular, scoreLabe
       onClick={handleCardClick}
     >
       {/* User Profile Picture */}
-      <div className="relative h-32 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+      <div className="relative h-32 bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
         {user.userImage ? (
           <img
             src={user.userImage}
@@ -140,7 +140,7 @@ function UserCard({ user, showTimestamp, scoreKey, scoreLabelSingular, scoreLabe
 
       {/* User Info */}
       <div className="p-3">
-        <h4 className="font-semibold text-sm mb-1 truncate text-blue-600">
+        <h4 className="font-semibold text-sm mb-1 truncate text-emerald-700">
           {user.userName}
         </h4>
         {user.habitatName && (
@@ -150,7 +150,7 @@ function UserCard({ user, showTimestamp, scoreKey, scoreLabelSingular, scoreLabe
           <span className="text-green-600 font-semibold">{score}</span>
           {' '}{score === 1 ? scoreLabelSingular : scoreLabelPlural}
           {showVegTypeCount && user.vegetationTypeCount != null && (
-            <> · <span className="text-blue-600 font-semibold">{user.vegetationTypeCount}</span> {user.vegetationTypeCount === 1 ? 'veg. type' : 'veg. types'}</>
+            <> · <span className="text-emerald-700 font-semibold">{user.vegetationTypeCount}</span> {user.vegetationTypeCount === 1 ? 'veg. type' : 'veg. types'}</>
           )}
         </p>
         {showTimestamp && user.lastUpload && (
@@ -180,7 +180,7 @@ function UserRow({ rank, user, showTimestamp, scoreKey, scoreLabelSingular, scor
             className="w-12 h-12 rounded-full object-cover"
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white font-bold">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold">
             {getInitials(user.userName)}
           </div>
         )}
@@ -199,7 +199,7 @@ function UserRow({ rank, user, showTimestamp, scoreKey, scoreLabelSingular, scor
           {showVegTypeCount && user.vegetationTypeCount != null && (
             <span className="text-gray-400">
               {' · '}
-              <span className="text-blue-600 font-semibold">{user.vegetationTypeCount.toLocaleString()}</span>
+              <span className="text-emerald-700 font-semibold">{user.vegetationTypeCount.toLocaleString()}</span>
               {' '}{user.vegetationTypeCount === 1 ? 'veg. type' : 'veg. types'}
             </span>
           )}

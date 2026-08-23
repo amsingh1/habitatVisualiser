@@ -58,9 +58,7 @@ function LoggedOutHome() {
         </div>
 
         <div className="w-full flex-1 lg:max-w-lg">
-          <div className="rounded-2xl overflow-hidden shadow-lg">
-            <ImageSlider />
-          </div>
+          <HeroVisual />
         </div>
       </section>
 
@@ -72,7 +70,7 @@ function LoggedOutHome() {
             </span>
             <h3 className="mt-4 text-lg font-bold text-stone-900">Explore habitats</h3>
             <p className="mt-2 text-sm text-stone-600">
-              Browse a growing catalogue of European vegetation and habitat types, mapped by location and classification.
+              Browse a growing record of European vegetation and habitat types, mapped by location and classification.
             </p>
           </div>
           <div className="bg-white border border-stone-200 rounded-2xl p-6">
@@ -90,13 +88,39 @@ function LoggedOutHome() {
             </span>
             <h3 className="mt-4 text-lg font-bold text-stone-900">Join the community</h3>
             <p className="mt-2 text-sm text-stone-600">
-              See what others are cataloguing, compare notes, and climb the community leaderboard.
+              See what others are recording, compare notes, and climb the community leaderboard.
             </p>
           </div>
         </div>
       </section>
 
       <StatsStrip />
+    </div>
+  );
+}
+
+// Shows the real photo slider once observations exist; until then a styled
+// panel keeps the hero balanced instead of leaving an empty column.
+function HeroVisual() {
+  const { data } = useSWR('/api/habitats?slider=true&limit=5', fetcher);
+
+  if (data?.sliderImages?.length) {
+    return (
+      <div className="rounded-2xl overflow-hidden shadow-lg">
+        <ImageSlider />
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-emerald-700 to-emerald-900 h-64 md:h-96 flex flex-col items-center justify-center text-center px-8">
+      <span className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/15 text-white">
+        <LeafIcon width={28} height={28} />
+      </span>
+      <p className="mt-4 text-white font-bold text-lg">A growing atlas of European habitats</p>
+      <p className="mt-1.5 text-emerald-100 text-sm max-w-xs">
+        Field photographs from contributors across the continent appear here.
+      </p>
     </div>
   );
 }
