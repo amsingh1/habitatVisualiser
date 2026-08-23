@@ -7,8 +7,11 @@ RUN npm install -g pnpm
 # Create app directory
 WORKDIR /app
 
-# Install dependencies using pnpm lockfile for reproducible installs
-COPY package.json pnpm-lock.yaml ./
+# Install dependencies using pnpm lockfile for reproducible installs.
+# pnpm-workspace.yaml is copied too: it carries the allowBuilds entries that
+# let sharp / unrs-resolver run their postinstall scripts, so the install in
+# the image matches a local one.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
