@@ -51,9 +51,9 @@ export default function AuthNavBar() {
   };
 
   return (
-    <header className="bg-white border-b border-stone-200">
+    <header className="bg-emerald-50/60 border-b border-emerald-100">
       <nav className="w-full px-4 sm:px-6 lg:px-8" aria-label="Top">
-      <div className="w-full py-3 flex items-center justify-between border-b border-stone-200 lg:border-none">
+      <div className="w-full py-3 flex items-center justify-between border-b border-emerald-100 lg:border-none">
   {/* Logo - positioned completely left */}
   <Link href="/" className="text-stone-900 text-xl font-bold">
     Vegetation Types
@@ -151,7 +151,7 @@ export default function AuthNavBar() {
         
         {/* Mobile Menu Dropdown - for both logged in and logged out states */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-2 space-y-2 border-b border-stone-200">
+          <div className="md:hidden py-2 space-y-2 border-b border-emerald-100">
             {loading && <span className="text-stone-500 px-4">Loading...</span>}
 
             {!loading && !session && (

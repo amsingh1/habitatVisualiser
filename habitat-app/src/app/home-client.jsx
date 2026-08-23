@@ -107,7 +107,7 @@ function StatsStrip() {
   if (!data || typeof data.observationCount !== 'number') return null;
 
   const stats = [
-    { label: 'Vegetation types catalogued', value: data.vegetationTypeCount },
+    { label: 'Vegetation types documented', value: data.vegetationTypeCount },
     { label: 'Field observations uploaded', value: data.observationCount },
     { label: 'Community contributors', value: data.contributorCount },
     { label: 'Countries covered', value: data.countryCount },
