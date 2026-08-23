@@ -48,7 +48,7 @@ export default function MyImagesClient() {
     if (!session || !session.user) return null;
 
     return (
-      <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
+      <div className="mb-8 p-6 bg-white border border-stone-200 rounded-2xl">
         <div className="flex items-center">
           {session.user.image ? (
             <Image
@@ -59,8 +59,8 @@ export default function MyImagesClient() {
               className="rounded-full mr-4"
             />
           ) : (
-            <div className="h-20 w-20 rounded-full bg-indigo-200 flex items-center justify-center mr-4">
-              <span className="text-2xl text-indigo-600">
+            <div className="h-20 w-20 rounded-full bg-emerald-100 flex items-center justify-center mr-4">
+              <span className="text-2xl text-emerald-700">
                 {session.user.name ? session.user.name[0] : session.user.email[0]}
               </span>
             </div>
@@ -88,7 +88,7 @@ export default function MyImagesClient() {
         <div className="mt-6">
           <Link
             href="/auth/signin"
-            className="px-5 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            className="px-5 py-3 bg-emerald-700 text-white rounded-md hover:bg-emerald-800"
           >
             Login
           </Link>
@@ -116,14 +116,14 @@ export default function MyImagesClient() {
               <p className="text-gray-500 mb-4">You haven&apos;t uploaded any habitat images yet.</p>
               <Link
                 href="/habitats"
-                className="px-5 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                className="px-5 py-3 bg-emerald-700 text-white rounded-md hover:bg-emerald-800"
               >
                 Upload Your First Habitat
               </Link>
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="border rounded-lg">
+              <div className="border border-stone-200 rounded-2xl overflow-hidden bg-white">
                 <HabitatMap dataType="personal" />
               </div>
               <div>

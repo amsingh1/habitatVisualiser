@@ -1,0 +1,73 @@
+name: Build and push Docker image
+
+# Only merges/pushes to main publish an image. Feature branches and pull
+# requests never push to Docker Hub.
+on:
+  push:
+    branches: [main]
+  # Manual run, e.g. to cut a released version tag for rollback:
+  #   Actions -> Build and push Docker image -> Run workflow -> tag: 1.0.0
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Extra tag to publish (e.g. 1.0.0). Leave blank for latest only.'
+        required: false
+        type: string
+
+env:
+  # Must match the Docker Hub account the token below belongs to, and the
+  # image named in habitat-app/docker-compose.yml.
+  IMAGE_NAME: amsingh2/habitat-app
+
+# A newer push supersedes an in-flight one rather than racing it to :latest.
+concurrency:
+  group: docker-publish
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Derive image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          # :latest for the newest main build, plus an immutable
+          # main-<sha> tag so a specific build can be rolled back to via
+          # APP_IMAGE_TAG (see DEPLOYMENT.md).
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=main-,format=short
+            type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./habitat-app
+          file: ./habitat-app/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summarise published tags
+        run: |
+          echo "### Pushed to Docker Hub" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

@@ -58,7 +58,12 @@ export default function HabitatsClient() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-extrabold text-stone-900">Explore vegetation types</h1>
+        <p className="mt-1 text-sm text-stone-600">Browse all recorded vegetation types, mapped by location.</p>
+      </div>
+
+      <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 mb-6">
         <SearchHabitatComponent context="habitats" />
       </div>
 
@@ -67,14 +72,14 @@ export default function HabitatsClient() {
           {error}
         </div>
       )}
-      
+
       {loading && (
         <div className="py-10 text-center">Loading habitats...</div>
       )}
 
       {!loading && !showUploadForm && (
         <div className="space-y-6">
-          <div className="border rounded-lg">
+          <div className="border border-stone-200 rounded-2xl overflow-hidden bg-white">
             <HabitatMap  />
           </div>
           <div>

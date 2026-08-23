@@ -97,7 +97,7 @@ export default function MapComponent({ habitats, mapCenter }) {
               onClick={() => triggerHabitatSelection(habitat)}
             >
             <h3 
-              className="font-bold text-lg text-blue-600 hover:underline"
+              className="font-bold text-lg text-emerald-700 hover:underline"
               title={habitat.habitatName} // This adds the tooltip with full name
             >
               {habitat.habitatName.length > 30 
@@ -128,7 +128,7 @@ export default function MapComponent({ habitats, mapCenter }) {
               )}
               <p className="text-sm mt-2">Added by: {habitat.userName}</p>
               <div className="mt-3 text-center">
-                <span className="text-blue-500 text-sm">Click to view details →</span>
+                <span className="text-emerald-600 text-sm">Click to view details →</span>
               </div>
             </div>
           </Popup>

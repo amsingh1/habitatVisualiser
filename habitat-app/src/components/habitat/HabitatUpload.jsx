@@ -748,7 +748,7 @@ export default function HabitatUpload() {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`border-2 border-dashed ${isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'} rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors duration-200 relative`}
+            className={`border-2 border-dashed ${isDragging ? 'border-emerald-600 bg-emerald-50' : 'border-gray-300'} rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors duration-200 relative`}
           >
             {/* Show existing images if editing */}
             {isEditing && existingImages && existingImages.length > 0 && (
@@ -826,7 +826,7 @@ export default function HabitatUpload() {
                   e.stopPropagation();
                   triggerFileInput();
                 }}
-                className="mt-4 flex items-center justify-center w-full py-2 bg-indigo-50 hover:bg-indigo-100 border border-dashed border-indigo-300 rounded text-indigo-600 transition-all duration-200"
+                className="mt-4 flex items-center justify-center w-full py-2 bg-emerald-50 hover:bg-emerald-100 border border-dashed border-emerald-300 rounded text-emerald-700 transition-all duration-200"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -854,7 +854,7 @@ export default function HabitatUpload() {
         {isUploading && (
           <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
             <div 
-              className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" 
+              className="bg-emerald-700 h-2.5 rounded-full transition-all duration-300" 
               style={{ width: `${uploadProgress}%` }}
             ></div>
           </div>
@@ -868,7 +868,7 @@ export default function HabitatUpload() {
           <input
             type="text"
             id="vegClass"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
             value={vegClass}
             onChange={(e) => {
               setVegClass(e.target.value);
@@ -922,7 +922,7 @@ export default function HabitatUpload() {
           <input
             type="text"
             id="vegOrder"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
             value={vegOrder}
             onChange={(e) => {
               setVegOrder(e.target.value);
@@ -974,7 +974,7 @@ export default function HabitatUpload() {
           <input
             type="text"
             id="vegAlliance"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
             value={vegAlliance}
             onChange={(e) => { setVegAlliance(e.target.value); setShowAllianceSuggestions(true); }}
             onFocus={() => {
@@ -1021,7 +1021,7 @@ export default function HabitatUpload() {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             GPS Coordinates
             {isGeocodingLocation && (
-              <span className="ml-2 text-xs text-indigo-600">
+              <span className="ml-2 text-xs text-emerald-700">
                 (Looking up location...)
               </span>
             )}
@@ -1034,7 +1034,7 @@ export default function HabitatUpload() {
               <input
                 type="text"
                 id="latitude"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
                 value={latitude}
                 onChange={(e) => setLatitude(e.target.value)}
                 placeholder="e.g., 28.6139"
@@ -1048,7 +1048,7 @@ export default function HabitatUpload() {
               <input
                 type="text"
                 id="longitude"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
                 value={longitude}
                 onChange={(e) => setLongitude(e.target.value)}
                 placeholder="e.g., 77.2090"
@@ -1059,7 +1059,7 @@ export default function HabitatUpload() {
           <button
             type="button"
             onClick={() => setShowMap(!showMap)}
-            className="mt-2 flex items-center text-sm text-indigo-600 hover:text-indigo-800"
+            className="mt-2 flex items-center text-sm text-emerald-700 hover:text-emerald-900"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -1068,8 +1068,8 @@ export default function HabitatUpload() {
           </button>          {/* EXIF Data Info */}
           {isLoadingExif && (
             <div className="mt-2 text-sm">
-              <div className="flex items-center text-indigo-600">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <div className="flex items-center text-emerald-700">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-emerald-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -1092,14 +1092,14 @@ export default function HabitatUpload() {
                   }}
                   className="mr-2"
                 />
-                <label htmlFor="useExifData" className="text-indigo-600 font-medium">
+                <label htmlFor="useExifData" className="text-emerald-700 font-medium">
                   Use EXIF data from photos
                 </label>
               </div>
               {exifData && useExifData && (
-                <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                  <p className="font-medium text-blue-800 mb-1">Photo EXIF Data Found:</p>
-                  <ul className="list-disc list-inside text-blue-700 space-y-1">
+                <div className="bg-emerald-50 p-3 rounded border border-emerald-100">
+                  <p className="font-medium text-emerald-900 mb-1">Photo EXIF Data Found:</p>
+                  <ul className="list-disc list-inside text-emerald-800 space-y-1">
                     {exifData.latitude && exifData.longitude && (
                       <li>GPS: {exifData.latitude.toFixed(2)}, {exifData.longitude.toFixed(2)}</li>
                     )}
@@ -1145,7 +1145,7 @@ export default function HabitatUpload() {
               <input
                 type="text"
                 id="state"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
                 placeholder="e.g., Bavaria"
@@ -1159,7 +1159,7 @@ export default function HabitatUpload() {
               <input
                 type="text"
                 id="country"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 placeholder="e.g., Germany"
@@ -1176,7 +1176,7 @@ export default function HabitatUpload() {
           <input
             type="date"
             id="date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
@@ -1189,7 +1189,7 @@ export default function HabitatUpload() {
           <input
             type="text"
             id="dominantSpecies1"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
             value={dominantSpecies1}
             onChange={(e) => setDominantSpecies1(e.target.value)}
             placeholder="Enter dominant species 1"
@@ -1203,7 +1203,7 @@ export default function HabitatUpload() {
           <input
             type="text"
             id="dominantSpecies2"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
             value={dominantSpecies2}
             onChange={(e) => setDominantSpecies2(e.target.value)}
             placeholder="Enter dominant species 2"
@@ -1217,7 +1217,7 @@ export default function HabitatUpload() {
           <input
             type="text"
             id="dominantSpecies3"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
             value={dominantSpecies3}
             onChange={(e) => setDominantSpecies3(e.target.value)}
             placeholder="Enter dominant species 3"
@@ -1231,7 +1231,7 @@ export default function HabitatUpload() {
           <textarea
             id="notes"
             rows="3"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Add any additional notes"
@@ -1249,7 +1249,7 @@ export default function HabitatUpload() {
           <button
             type="submit"
             disabled={isUploading}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="px-4 py-2 bg-emerald-700 text-white rounded-md hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 disabled:opacity-50"
           >
             {isUploading ? 'Saving...' : isEditing ? 'Update Vegetation type' : 'Upload Vegetation type'}
           </button>
