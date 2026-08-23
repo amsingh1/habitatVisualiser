@@ -1,22 +1,12 @@
 name: Build and push Docker image
 
-# ONLY main ever publishes to Docker Hub. Any other branch or a pull request
-# builds the image and throws it away, so the Dockerfile is verified without
-# anything reaching the registry. See the `publish` condition on the steps
-# below -- it is what enforces this, not the triggers.
+# Only merges/pushes to main publish an image. Feature branches and pull
+# requests never push to Docker Hub.
 on:
   push:
-    branches:
-      - main
-      # TEMPORARY: lets this branch build in Actions before it is merged, so
-      # the workflow can be checked. Builds only -- it cannot publish. Delete
-      # this line once the branch is merged.
-      - claude/habitat-visualizer-landing-review-cs09i6
-  pull_request:
+    branches: [main]
   # Manual run, e.g. to cut a released version tag for rollback:
   #   Actions -> Build and push Docker image -> Run workflow -> tag: 1.0.0
-  # NOTE: GitHub only shows this button once the workflow is on the default
-  # branch (main). It will not appear while this lives on a feature branch.
   workflow_dispatch:
     inputs:
       tag:
@@ -30,17 +20,13 @@ env:
   IMAGE_NAME: amsingh2/habitat-app
 
 # A newer push supersedes an in-flight one rather than racing it to :latest.
-# Scoped per ref so a branch build never queues behind main's.
 concurrency:
-  group: docker-publish-${{ github.ref }}
+  group: docker-publish
   cancel-in-progress: false
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    env:
-      # The single gate for touching Docker Hub: main, and not a PR build.
-      PUBLISH: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -48,9 +34,7 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Skipped on branch/PR builds, so they work with no secrets configured.
       - name: Log in to Docker Hub
-        if: env.PUBLISH == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -69,27 +53,21 @@ jobs:
             type=sha,prefix=main-,format=short
             type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
 
-      - name: Build${{ env.PUBLISH == 'true' && ' and push' || ' only (not main)' }}
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: ./habitat-app
           file: ./habitat-app/Dockerfile
           platforms: linux/amd64
-          push: ${{ env.PUBLISH == 'true' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Summarise result
+      - name: Summarise published tags
         run: |
-          if [ "${{ env.PUBLISH }}" = "true" ]; then
-            echo "### Pushed to Docker Hub" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "### Build only - nothing published" >> "$GITHUB_STEP_SUMMARY"
-            echo "Image built successfully from \`${GITHUB_REF_NAME}\`." >> "$GITHUB_STEP_SUMMARY"
-            echo "Only \`main\` publishes to Docker Hub." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          echo "### Pushed to Docker Hub" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
