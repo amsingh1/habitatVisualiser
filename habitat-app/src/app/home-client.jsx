@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import useSWR from 'swr';
+import ImageSlider from '@/components/ImageSlider';
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -28,8 +29,8 @@ const UsersIcon = (props) => (
 function LoggedOutHome() {
   return (
     <div className="w-full">
-      <section className="py-10 sm:py-14">
-        <div className="max-w-2xl">
+      <section className="py-10 sm:py-14 flex flex-col lg:flex-row items-center gap-10">
+        <div className="max-w-xl flex-1">
           <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-800 font-semibold text-xs px-3 py-1.5 rounded-full">
             <LeafIcon width={14} height={14} />
             European habitat data, mapped
@@ -53,6 +54,12 @@ function LoggedOutHome() {
             >
               Log in
             </Link>
+          </div>
+        </div>
+
+        <div className="w-full flex-1 lg:max-w-lg">
+          <div className="rounded-2xl overflow-hidden shadow-lg">
+            <ImageSlider />
           </div>
         </div>
       </section>
@@ -88,7 +95,35 @@ function LoggedOutHome() {
           </div>
         </div>
       </section>
+
+      <StatsStrip />
     </div>
+  );
+}
+
+function StatsStrip() {
+  const { data } = useSWR('/api/stats', fetcher);
+
+  if (!data || typeof data.observationCount !== 'number') return null;
+
+  const stats = [
+    { label: 'Vegetation types catalogued', value: data.vegetationTypeCount },
+    { label: 'Field observations uploaded', value: data.observationCount },
+    { label: 'Community contributors', value: data.contributorCount },
+    { label: 'Countries covered', value: data.countryCount },
+  ];
+
+  return (
+    <section className="mt-4 bg-emerald-50 rounded-2xl px-6 py-8 sm:px-10">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+        {stats.map((stat) => (
+          <div key={stat.label}>
+            <div className="text-3xl font-extrabold text-emerald-800">{stat.value.toLocaleString()}</div>
+            <div className="mt-1 text-sm text-stone-600">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

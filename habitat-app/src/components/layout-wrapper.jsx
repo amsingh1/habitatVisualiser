@@ -3,7 +3,6 @@
 import AuthNavBar from './ui/auth-navbar';
 import Footer from './ui/footer';
 import { useSession } from 'next-auth/react';
-import ImageSlider from '@/components/ImageSlider';
 export default function LayoutWrapper({ children }) {
 
    const { data: session, status } = useSession();
@@ -15,7 +14,6 @@ export default function LayoutWrapper({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
       <AuthNavBar />
-      {!session && <ImageSlider />}
 
       <main className="flex-1 w-full max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {children}
