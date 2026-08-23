@@ -6,6 +6,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // Disabled because react-leaflet's MapContainer can't tolerate the dev-only
+    // double-mount React Strict Mode does: Leaflet throws "Map container is
+    // already initialized" on the second mount. No effect on production builds.
+    reactStrictMode: false,
     // Required for mongoose to work correctly in App Router server components
     serverExternalPackages: ['mongoose'],
     images: {
