@@ -64,13 +64,14 @@ export async function GET(request) {
     }
 
     // Find units matching the query.
-    // Class fetches have no limit (classes are few). Order/alliance retain a 300-item cap.
+    // fetchAll returns every matching unit (limit 0 = no limit): the form filters the
+    // list client-side, so a cap would silently hide alliances. Docs are tiny (4 fields).
     // Exact code lookups return at most 1 result.
     let limitVal = 10;
     if (code) {
       limitVal = 1;
     } else if (fetchAll) {
-      limitVal = type === 'class' ? 0 : 300;
+      limitVal = 0;
     }
 
     const units = await EuVegUnits.find(dbQuery)
