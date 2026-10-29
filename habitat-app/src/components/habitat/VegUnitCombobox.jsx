@@ -72,6 +72,8 @@ export default function VegUnitCombobox({
   // (Re)load the first page whenever the dropdown opens or its filters change
   useEffect(() => {
     if (!open) return undefined;
+    // Drop any batch still in flight for the previous filter before the debounce fires
+    requestId.current += 1;
     const timer = setTimeout(() => {
       if (listRef.current) listRef.current.scrollTop = 0;
       load(0);

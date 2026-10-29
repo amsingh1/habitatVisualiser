@@ -486,6 +486,7 @@ export default function HabitatUpload() {
       setVegClass(lastValidClass);
       return;
     }
+    setVegClass('');
     setLastValidClass('');
     setVegClassCode('');
   };
@@ -495,11 +496,15 @@ export default function HabitatUpload() {
       setVegOrder(lastValidOrder);
       return;
     }
+    setVegOrder('');
     setLastValidOrder('');
     setVegOrderCode('');
   };
 
-  const handleAllianceEmpty = () => setLastValidAlliance('');
+  const handleAllianceEmpty = () => {
+    setVegAlliance('');
+    setLastValidAlliance('');
+  };
 
   const removeImage = (index) => {
     const updatedFiles = [...selectedFiles];
@@ -676,8 +681,13 @@ export default function HabitatUpload() {
       
       // Reset form and redirect
       setVegClass('');
+      setLastValidClass('');
+      setVegClassCode('');
       setVegOrder('');
+      setLastValidOrder('');
+      setVegOrderCode('');
       setVegAlliance('');
+      setLastValidAlliance('');
       setState('');
       setCountry('');
       setDate('');
