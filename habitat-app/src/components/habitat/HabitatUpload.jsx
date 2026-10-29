@@ -17,6 +17,24 @@ const MapSelector = dynamic(
   }
 );
 
+// Downscale large photos in the browser so uploads stay under proxy/server body limits
+async function compressImage(file, maxDim = 2000, quality = 0.85, skipBelow = 1024 * 1024) {
+  if (!file.type.startsWith('image/') || file.size <= skipBelow) return file;
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
+}
+
 export default function HabitatUpload() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -622,7 +640,7 @@ export default function HabitatUpload() {
       if (selectedFiles && selectedFiles.length > 0) {
         const formData = new FormData();
         for (const file of selectedFiles) {
-          formData.append('image', file);
+          formData.append('image', await compressImage(file));
         }
         
         setUploadProgress(30);
@@ -634,10 +652,16 @@ export default function HabitatUpload() {
         
         setUploadProgress(70);
         
-        const uploadData = await uploadResponse.json();
+        const isJson = (uploadResponse.headers.get('content-type') || '').includes('application/json');
+        const uploadData = isJson ? await uploadResponse.json() : null;
         
-        if (!uploadResponse.ok) {
-          throw new Error(uploadData.message || 'Error uploading image');
+        if (!uploadResponse.ok || !uploadData) {
+          if (uploadResponse.status === 413) {
+            throw new Error('Image is too large to upload. Try a smaller image.');
+          }
+          throw new Error(
+            uploadData?.message || `Upload failed (server error ${uploadResponse.status}). Please try again.`
+          );
         }
         
         // Add new images to the array
@@ -1257,4 +1281,4 @@ export default function HabitatUpload() {
       </form>
     </div>
   );
-}
+}
