@@ -37,7 +37,7 @@ Open issues, decisions and history are written down in `habitat-app/docs/notes/`
 - Keep pnpm's `minimumReleaseAge` protection on; do not disable it.
 - CI (`docker-publish.yml`) blocks publishing on `pnpm audit --prod
   --audit-level=high` and a Trivy critical-severity scan. Do not weaken or
-  remove those steps to get a build through. Dependabot opens weekly update PRs.
+  remove those steps to get a build through.
 - Require the publish workflow to pass in branch protection on `main`.
 
 ## Local run without Docker
