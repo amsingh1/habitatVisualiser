@@ -1,5 +1,5 @@
 # Base image
-FROM node:20-alpine
+FROM node:25-alpine
 
 # Install pnpm
 RUN npm install -g pnpm
