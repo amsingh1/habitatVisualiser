@@ -64,7 +64,7 @@ jobs:
       # Gate: build locally first and scan the image (OS + app packages)
       # before anything is pushed.
       - name: Build image for scanning
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./habitat-app
           file: ./habitat-app/Dockerfile
@@ -82,7 +82,7 @@ jobs:
           exit-code: '1'
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./habitat-app
           file: ./habitat-app/Dockerfile
