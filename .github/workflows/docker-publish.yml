@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Gate: a critical advisory in a production dependency stops the
       # publish. Uses pnpm because pnpm-lock.yaml is what the image installs.
