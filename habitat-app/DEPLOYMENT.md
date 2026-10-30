@@ -119,7 +119,7 @@ habitat.example.org {
 }
 ```
 
-Two requirements, whichever proxy is used:
+Three requirements, whichever proxy is used:
 
 1. **Forward the original protocol and host.** The proxy must send
    `X-Forwarded-Proto: https` and preserve the `Host` header. Without them
@@ -131,7 +131,17 @@ Two requirements, whichever proxy is used:
    proxy_set_header X-Forwarded-Proto $scheme;
    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
    ```
-2. **`NEXTAUTH_URL` in `.env.local` must exactly match the public HTTPS URL**
+2. **Allow large request bodies.** Users upload phone photos (often 3–10 MB).
+   nginx rejects bodies over 1 MB by default with an HTML "413 Request Entity
+   Too Large" page, which the app shows as `Unexpected token '<' ... is not
+   valid JSON`. Set a limit in the `server` (or `location`) block:
+   ```
+   client_max_body_size 25m;
+   ```
+   Then `nginx -t && systemctl reload nginx`. Caddy has no body limit by
+   default, so nothing is needed there. The upload may also take a while, so
+   keep the proxy read timeout generous (nginx: `proxy_read_timeout 120s;`).
+3. **`NEXTAUTH_URL` in `.env.local` must exactly match the public HTTPS URL**
    — same scheme, same hostname, no trailing slash.
 
 The app owner must also register `https://<your-domain>/api/auth/callback/google`
@@ -149,4 +159,5 @@ will fail on first use.
 - **`curl` from another machine to port 3001 refuses to connect**: expected. The app is deliberately bound to loopback only (see TLS section) — reach it through the reverse proxy, or from the host itself.
 - **`mongodb` never becomes healthy**: `docker compose logs mongodb` — check for restore errors if this is a first start.
 - **App can't reach MongoDB**: confirm `.env.local` doesn't need editing — `MONGODB_URI` is already set correctly by `docker-compose.yml` for the two containers to reach each other over the internal `app-network`; you shouldn't need to change it.
+- **Uploading an image fails with `Unexpected token '<', "<html>..." is not valid JSON`**: the proxy is rejecting the upload with an HTML error page, almost always nginx's 1 MB default body limit. Add `client_max_body_size 25m;` (see TLS section) and reload nginx. Check the status of the `/api/upload` request in the browser dev tools Network tab: 413 = size limit, 502/504 = proxy timeout.
 - **Auth (Google OAuth) not working**: check `NEXTAUTH_URL` in `.env.local` matches the real public URL of this deployment.
