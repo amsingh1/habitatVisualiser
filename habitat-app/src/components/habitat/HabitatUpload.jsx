@@ -683,7 +683,7 @@ export default function HabitatUpload() {
       setPreviews([]);
       setExistingImages([]);
       
-      setSuccess(isEditing ? 'Vegetation type updated successfully!' : 'Vegetation type uploaded successfully!');
+      setSuccess(isEditing ? 'Vegetation Record updated successfully!' : 'Vegetation Record uploaded successfully!');
       setTimeout(() => {
         setSuccess('');
         router.push('/habitats');
@@ -700,7 +700,7 @@ export default function HabitatUpload() {
 
   return (
     <div className="bg-white shadow rounded-lg p-6 mb-6">
-      <h2 className="text-2xl font-bold mb-4">{isEditing ? 'Edit Vegetation type' : 'Upload New Vegetation type'}</h2>
+      <h2 className="text-2xl font-bold mb-4">{isEditing ? 'Edit Vegetation Record' : 'Upload New Vegetation Record'}</h2>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -788,7 +788,7 @@ export default function HabitatUpload() {
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                <p className="mt-2">Click to upload vegetation type images or drag and drop files here</p>
+                <p className="mt-2">Click to upload vegetation record images or drag and drop files here</p>
               </div>
             ) }
             
@@ -1132,7 +1132,7 @@ export default function HabitatUpload() {
             disabled={isUploading}
             className="px-4 py-2 bg-emerald-700 text-white rounded-md hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 disabled:opacity-50"
           >
-            {isUploading ? 'Saving...' : isEditing ? 'Update Vegetation type' : 'Upload Vegetation type'}
+            {isUploading ? 'Saving...' : isEditing ? 'Update Vegetation Record' : 'Upload Vegetation Record'}
           </button>
         </div>
       </form>
