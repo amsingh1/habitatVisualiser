@@ -82,7 +82,11 @@ export default function CoordinateMapSelector({ currentCoordinate, onSelectCoord
         
         if (data.address) {
           // Extract just the state/region and country
-          const state = data.address.village || data.address.municipality || data.address.county || data.address.state || '';
+          // Largest level first (same order as the upload form) so the English region
+          // name is used; small places (village/municipality) often have no English name.
+          const state = data.address.state || data.address.region || data.address.province ||
+                        data.address.county || data.address.municipality || data.address.village ||
+                        data.address.town || data.address.city || ''; // city: e.g. Vienna, a city-state with no state level
           const country = data.address.country || '';
           
           if (state && country) {
