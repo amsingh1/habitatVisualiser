@@ -274,7 +274,7 @@ export default function HabitatUpload() {
       try {
         // Use OpenStreetMap Nominatim for reverse geocoding (free, no API key needed)
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1&accept-language=en`,
           {
             headers: {
               'Accept': 'application/json',
