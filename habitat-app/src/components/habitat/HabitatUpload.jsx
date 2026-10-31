@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
 import exifr from 'exifr'; // Import exifr for EXIF data extraction
 import VegUnitCombobox from './VegUnitCombobox';
+import { MAX_COORDINATE_UNCERTAINTY_M, parseCoordinateUncertainty } from '@/lib/coordinateUncertainty';
 
 const MapSelector = dynamic(
   () => import('./CoordinateMapSelector'),
@@ -53,6 +54,7 @@ export default function HabitatUpload() {
   const [dominantSpecies3, setDominantSpecies3] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
+  const [coordinateUncertainty, setCoordinateUncertainty] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
@@ -130,6 +132,10 @@ export default function HabitatUpload() {
           }
         }
         
+        setCoordinateUncertainty(
+          habitat.coordinateUncertaintyMeters != null ? String(habitat.coordinateUncertaintyMeters) : ''
+        );
+
         // Set existing images
         if (habitat.imageUrl && habitat.imageUrl.length > 0) {
           setExistingImages(habitat.imageUrl);
@@ -573,6 +579,12 @@ export default function HabitatUpload() {
       setError('Longitude must be between -180 and 180');
       return;
     }
+
+    const uncertaintyCheck = parseCoordinateUncertainty(coordinateUncertainty);
+    if (uncertaintyCheck.error) {
+      setError(uncertaintyCheck.error);
+      return;
+    }
     
     setIsUploading(true);
     setUploadProgress(10);
@@ -618,6 +630,8 @@ export default function HabitatUpload() {
       // Prepare data for API call
       const habitatData = {
         gpsCoordinate: `${latitude},${longitude}`,
+        // null = no value (clears it when editing)
+        coordinateUncertaintyMeters: parseCoordinateUncertainty(coordinateUncertainty).value,
         vegClass,
         vegOrder,
         vegAlliance,
@@ -680,6 +694,7 @@ export default function HabitatUpload() {
       setSelectedFiles([]);
       setLatitude('');
       setLongitude('');
+      setCoordinateUncertainty('');
       setPreviews([]);
       setExistingImages([]);
       
@@ -936,6 +951,25 @@ export default function HabitatUpload() {
                 required
               />
             </div>
+          </div>
+          <div className="mt-3">
+            <label htmlFor="coordinateUncertainty" className="block text-xs text-gray-600 mb-1">
+              Coordinate uncertainty (metres) <span className="text-gray-400">(optional)</span>
+            </label>
+            <input
+              type="number"
+              id="coordinateUncertainty"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-600 focus:border-emerald-600"
+              value={coordinateUncertainty}
+              onChange={(e) => setCoordinateUncertainty(e.target.value)}
+              min="0"
+              max={MAX_COORDINATE_UNCERTAINTY_M}
+              step="any"
+              placeholder="e.g., 25"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Radius around the point within which the true location lies (max {MAX_COORDINATE_UNCERTAINTY_M.toLocaleString('en-US')} m). Shown as a circle on the map.
+            </p>
           </div>
           <button
             type="button"
