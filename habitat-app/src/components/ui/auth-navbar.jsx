@@ -94,7 +94,7 @@ export default function AuthNavBar() {
       {!loading && session && (
         <>
         <Link href="/habitats/upload" className={pathname === '/habitats/upload' ? activeLinkClasses : actionButtonClasses}>
-          Upload New Vegetation type
+          Upload New Vegetation Record
         </Link>
           {/* Nav Links */}
           {navLinks.map(link => (
@@ -189,7 +189,7 @@ export default function AuthNavBar() {
                 </div>
 
                <Link href="/habitats/upload" className={`block mx-2 ${pathname === '/habitats/upload' ? activeLinkClasses : actionButtonClasses}`}>
-                Upload New Vegetation type
+                Upload New Vegetation Record
               </Link>
                 {/* Mobile Nav Links */}
                 {navLinks.map(link => (
