@@ -3,7 +3,7 @@ import HabitatsClient from './habitats-client';
 
 export const metadata = {
   title: 'Vegetation Types',
-  description: 'View and upload vegetation type images',
+  description: 'View and upload vegetation record images',
 };
 
 export default function HabitatsPage() {

@@ -683,7 +683,7 @@ export default function HabitatUpload() {
       setPreviews([]);
       setExistingImages([]);
       
-      setSuccess(isEditing ? 'Vegetation type updated successfully!' : 'Vegetation type uploaded successfully!');
+      setSuccess(isEditing ? 'Vegetation Record updated successfully!' : 'Vegetation Record uploaded successfully!');
       setTimeout(() => {
         setSuccess('');
         router.push('/habitats');
@@ -788,7 +788,7 @@ export default function HabitatUpload() {
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                <p className="mt-2">Click to upload vegetation type images or drag and drop files here</p>
+                <p className="mt-2">Click to upload vegetation record images or drag and drop files here</p>
               </div>
             ) }
             
