@@ -18,6 +18,12 @@ const HabitatSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide a coordinate'],
     },
+    // Optional radius (metres) of uncertainty around gpsCoordinate
+    coordinateUncertaintyMeters: {
+      type: Number,
+      min: [0, 'Coordinate uncertainty cannot be negative'],
+      max: [100000, 'Coordinate uncertainty cannot exceed 100,000 metres'],
+    },
     date: {
       type: Date,
       required: [true, 'Please provide a date'],

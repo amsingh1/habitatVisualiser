@@ -176,6 +176,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
         title={habitat.gpsCoordinate}
       >
         Coordinates: {short}
+        {habitat.coordinateUncertaintyMeters > 0 && ` (±${habitat.coordinateUncertaintyMeters} m)`}
       </p>
     );
   };

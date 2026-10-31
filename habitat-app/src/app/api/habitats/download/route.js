@@ -132,7 +132,7 @@ class DownloadService {
 // Each image gets its own row with a unique Image ID that matches the filename
 function generateCSV(habitats) {
   const headers = [
-    'Habitat ID', 'Image ID', 'Habitat Name', 'State', 'Country', 'GPS Coordinate', 'Date', 
+    'Habitat ID', 'Image ID', 'Habitat Name', 'State', 'Country', 'GPS Coordinate', 'Coordinate Uncertainty (m)', 'Date', 
     'Dominant Species 1', 'Dominant Species 2', 'Dominant Species 3',
     'Notes', 'Code', 'EVC Code', 'Author Name', 'Author Email', 'Created At'
   ].join(',');
@@ -151,6 +151,7 @@ function generateCSV(habitats) {
         `"${habitat.state || ''}"`,
         `"${habitat.country || ''}"`,
         `"${habitat.gpsCoordinate || ''}"`,
+        `"${habitat.coordinateUncertaintyMeters ?? ''}"`,
         `"${habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : ''}"`,
         `"${habitat.dominantSpecies1 || ''}"`,
         `"${habitat.dominantSpecies2 || ''}"`,
@@ -172,6 +173,7 @@ function generateCSV(habitats) {
           `"${habitat.state || ''}"`,
           `"${habitat.country || ''}"`,
           `"${habitat.gpsCoordinate || ''}"`,
+          `"${habitat.coordinateUncertaintyMeters ?? ''}"`,
           `"${habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : ''}"`,
           `"${habitat.dominantSpecies1 || ''}"`,
           `"${habitat.dominantSpecies2 || ''}"`,

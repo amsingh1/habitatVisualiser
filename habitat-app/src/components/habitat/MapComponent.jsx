@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import Image from 'next/image';
@@ -50,6 +50,38 @@ function LayerControl() {
   return null;
 }
 
+// Marker that also shows its coordinate-uncertainty circle (radius in metres)
+// while hovered or while its popup is open. No circle if no uncertainty is set.
+function UncertaintyMarker({ position, uncertainty, children }) {
+  const [hovered, setHovered] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
+  const showCircle = (hovered || popupOpen) && Number(uncertainty) > 0;
+
+  return (
+    <>
+      <Marker
+        position={position}
+        eventHandlers={{
+          mouseover: () => setHovered(true),
+          mouseout: () => setHovered(false),
+          popupopen: () => setPopupOpen(true),
+          popupclose: () => setPopupOpen(false),
+        }}
+      >
+        {children}
+      </Marker>
+      {showCircle && (
+        <Circle
+          center={position}
+          radius={Number(uncertainty)}
+          interactive={false}
+          pathOptions={{ color: '#059669', weight: 2, fillColor: '#10b981', fillOpacity: 0.15 }}
+        />
+      )}
+    </>
+  );
+}
+
 // This component will only be rendered on the client side
 export default function MapComponent({ habitats, mapCenter }) {
   useEffect(() => {
@@ -87,9 +119,10 @@ export default function MapComponent({ habitats, mapCenter }) {
       
       {habitats.map((habitat) => (
          habitat.gpsCoordinate && (
-        <Marker 
-          key={habitat._id} 
+        <UncertaintyMarker
+          key={habitat._id}
           position={habitat.coordinates}
+          uncertainty={habitat.coordinateUncertaintyMeters}
         >
           <Popup>
             <div 
@@ -106,6 +139,9 @@ export default function MapComponent({ habitats, mapCenter }) {
             </h3>
               <p>Location: {habitat.state}, {habitat.country}</p>
               {habitat.gpsCoordinate && <p>Coordinates: {habitat.gpsCoordinate}</p>}
+              {habitat.coordinateUncertaintyMeters > 0 && (
+                <p>Uncertainty: ±{habitat.coordinateUncertaintyMeters} m</p>
+              )}
               <p>Date: {new Date(habitat.date).toLocaleDateString()}</p>
               {habitat.notes && <p>Notes: {habitat.notes}</p>}
               {habitat.imageUrl && habitat.imageUrl.length > 0 && (
@@ -132,7 +168,7 @@ export default function MapComponent({ habitats, mapCenter }) {
               </div>
             </div>
           </Popup>
-        </Marker>
+        </UncertaintyMarker>
       )))}
     </MapContainer>
   );

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Habitat from '@/models/Habitat';
+import { parseCoordinateUncertainty } from '@/lib/coordinateUncertainty';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
@@ -29,8 +30,16 @@ export async function POST(req) {
     
     // Extract data
     const { habitatName, state, country, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate,
-            vegClass, vegOrder, vegAlliance } = data;
-    
+            vegClass, vegOrder, vegAlliance, coordinateUncertaintyMeters } = data;
+
+    const uncertainty = parseCoordinateUncertainty(coordinateUncertaintyMeters);
+    if (uncertainty.error) {
+      return NextResponse.json(
+        { success: false, message: uncertainty.error },
+        { status: 400 }
+      );
+    }
+
     // Validate that either state+country or location is provided
     if ((!state || !country)) {
       return NextResponse.json(
@@ -45,6 +54,7 @@ export async function POST(req) {
     // Prepare data for saving
     const habitatData = {
       gpsCoordinate,
+      ...(uncertainty.value !== null && { coordinateUncertaintyMeters: uncertainty.value }),
       habitatName: vegAlliance || vegOrder || vegClass || habitatName || '',
       state,
       country,
@@ -304,8 +314,17 @@ export async function PUT(req) {
     
     // Extract habitat ID and updated data
     const { habitatId, habitatName, state, country, date, notes, dominantSpecies1, dominantSpecies2, dominantSpecies3, imageUrl, gpsCoordinate,
-            vegClass, vegOrder, vegAlliance } = data;
-    
+            vegClass, vegOrder, vegAlliance, coordinateUncertaintyMeters } = data;
+
+    // undefined = leave unchanged; null/'' = clear; number = set
+    const uncertainty = parseCoordinateUncertainty(coordinateUncertaintyMeters);
+    if (uncertainty.error) {
+      return NextResponse.json(
+        { success: false, message: uncertainty.error },
+        { status: 400 }
+      );
+    }
+
     if (!habitatId) {
       return NextResponse.json(
         { success: false, message: 'Habitat ID is required' },
@@ -351,13 +370,23 @@ export async function PUT(req) {
       vegAlliance: vegAlliance !== undefined ? vegAlliance : existingHabitat.vegAlliance,
     };
     
+    // Only touch the field when the client sent it; null clears it
+    const updateOps = { $set: updateData };
+    if (coordinateUncertaintyMeters !== undefined) {
+      if (uncertainty.value === null) {
+        updateOps.$unset = { coordinateUncertaintyMeters: '' };
+      } else {
+        updateData.coordinateUncertaintyMeters = uncertainty.value;
+      }
+    }
+
     console.log("Habitat data to update:", updateData);
-    
+
     // Update the habitat
     console.log("Updating habitat entry...");
     const updatedHabitat = await Habitat.findByIdAndUpdate(
       habitatId,
-      updateData,
+      updateOps,
       { new: true } // Return the updated document
     );
     
