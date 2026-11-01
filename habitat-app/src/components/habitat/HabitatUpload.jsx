@@ -10,6 +10,87 @@ import 'leaflet/dist/leaflet.css';
 import exifr from 'exifr'; // Import exifr for EXIF data extraction
 import VegUnitCombobox from './VegUnitCombobox';
 import { MAX_COORDINATE_UNCERTAINTY_M, parseCoordinateUncertainty } from '@/lib/coordinateUncertainty';
+import {
+  MAX_IMAGES_PER_RECORD,
+  MAX_IMAGE_BYTES,
+  MAX_IMAGE_MEGAPIXELS,
+  FILE_INPUT_ACCEPT,
+  formatMegabytes,
+  isAllowedImageFile,
+  cloudinaryImageUrl,
+} from '@/lib/imageUpload';
+
+// Reads an image's pixel size in the browser. Returns null when the browser
+// cannot decode the format (e.g. HEIC in most browsers); Cloudinary then
+// enforces the megapixel limit itself.
+function readImageMegapixels(file) {
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => {
+      const mp = (img.naturalWidth * img.naturalHeight) / 1_000_000;
+      URL.revokeObjectURL(objectUrl);
+      resolve(mp > 0 ? mp : null);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null);
+    };
+    img.src = objectUrl;
+  });
+}
+
+// Uploads one photo straight from the browser to Cloudinary, using a
+// signature from our server (the API secret never reaches the browser).
+// Resolves with the stored image URL.
+async function uploadImageToCloudinary(file, onProgress) {
+  const signResponse = await fetch('/api/upload/sign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ fileName: file.name }),
+  });
+  const isJson = (signResponse.headers.get('content-type') || '').includes('application/json');
+  const sign = isJson ? await signResponse.json() : null;
+  if (!signResponse.ok || !sign?.signature) {
+    if (signResponse.status === 401) {
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+    throw new Error(sign?.message || `Could not prepare the upload (server error ${signResponse.status}).`);
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('api_key', sign.apiKey);
+  formData.append('timestamp', String(sign.timestamp));
+  formData.append('signature', sign.signature);
+  formData.append('folder', sign.folder);
+  formData.append('public_id', sign.public_id);
+  formData.append('allowed_formats', sign.allowed_formats);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', sign.uploadUrl);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(event.loaded / event.total);
+    };
+    xhr.onload = () => {
+      let data = null;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        // Not JSON; handled below.
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && data?.secure_url) {
+        resolve(data.secure_url);
+      } else {
+        reject(new Error(data?.error?.message || `Cloudinary rejected the upload (error ${xhr.status}).`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Network error while uploading. Check your connection and try again.'));
+    xhr.send(formData);
+  });
+}
 
 const MapSelector = dynamic(
   () => import('./CoordinateMapSelector'),
@@ -58,6 +139,10 @@ export default function HabitatUpload() {
   const [success, setSuccess] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
+  // Cloudinary URL per selected file once uploaded (same index as selectedFiles),
+  // so a retry after a failure does not upload the same photo twice.
+  const [uploadedUrls, setUploadedUrls] = useState([]);
+  const [uploadStatus, setUploadStatus] = useState('');
   const [existingImages, setExistingImages] = useState([]);
   const [showMap, setShowMap] = useState(false);
   const fileInputRef = useRef(null);
@@ -328,31 +413,69 @@ export default function HabitatUpload() {
     const debounceTimer = setTimeout(reverseGeocode, 800);
     return () => clearTimeout(debounceTimer);
   }, [latitude, longitude]); // Only depend on coordinates, not state/country to avoid loops
-  const handleFileChange = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-  
+  // Checks picked/dropped files against the upload limits (type, size,
+  // megapixels, photos per record) and adds the ones that pass.
+  const addFiles = async (incoming) => {
+    if (incoming.length === 0) return;
+
+    const problems = [];
+    const accepted = [];
+    let slotsLeft = MAX_IMAGES_PER_RECORD - existingImages.length - selectedFiles.length;
+
+    for (const file of incoming) {
+      if (!isAllowedImageFile(file)) {
+        problems.push(`${file.name} is not a supported image type (JPG, PNG, HEIC, WebP).`);
+        continue;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        problems.push(`${file.name} is ${formatMegabytes(file.size)}, the maximum is ${formatMegabytes(MAX_IMAGE_BYTES)}.`);
+        continue;
+      }
+      const megapixels = await readImageMegapixels(file);
+      if (megapixels !== null && megapixels > MAX_IMAGE_MEGAPIXELS) {
+        problems.push(`${file.name} is ${Math.round(megapixels)} MP, the maximum is ${MAX_IMAGE_MEGAPIXELS} MP.`);
+        continue;
+      }
+      if (slotsLeft <= 0) {
+        problems.push(`${file.name} was not added: a record can have at most ${MAX_IMAGES_PER_RECORD} photos.`);
+        continue;
+      }
+      slotsLeft -= 1;
+      accepted.push(file);
+    }
+
+    setError(problems.join(' '));
+    if (accepted.length === 0) return;
+
     // Clear existing EXIF data if we have any to allow the useEffect to find new EXIF data
     if (exifData) {
       setExifData(null);
     }
-    
-    // Generate previews for all selected files
-    const previewPromises = files.map((file) => {
+
+    // Generate previews for the accepted files
+    const previewPromises = accepted.map((file) => {
       const reader = new FileReader();
       return new Promise((resolve) => {
         reader.onload = () => resolve(reader.result);
         reader.readAsDataURL(file);
       });
     });
-  
+
     // Update state only once to minimize renders
     Promise.all(previewPromises).then((previewUrls) => {
-      // Update both state variables at once to batch the renders
-      setSelectedFiles(prevFiles => [...prevFiles, ...files]);
+      setSelectedFiles(prevFiles => [...prevFiles, ...accepted]);
       setPreviews(prevPreviews => [...prevPreviews, ...previewUrls]);
+      setUploadedUrls(prev => [...prev, ...accepted.map(() => null)]);
     });
   };
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    // Reset so picking the same file again (e.g. after removing it) triggers onChange
+    e.target.value = '';
+    await addFiles(files);
+  };
+
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -377,29 +500,8 @@ export default function HabitatUpload() {
     e.stopPropagation();
     setIsDragging(false);
     
-    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
-    if (files.length === 0) return;
-    
-    // Clear existing EXIF data if we have any to allow the useEffect to find new EXIF data
-    if (exifData) {
-      setExifData(null);
-    }
-    
-    // Generate previews for dropped files
-    const previewPromises = files.map((file) => {
-      const reader = new FileReader();
-      return new Promise((resolve) => {
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
-    });
-    
-    // Update state only once to minimize renders
-    Promise.all(previewPromises).then((previewUrls) => {
-      // Update both state variables at once to batch the renders
-      setSelectedFiles(prevFiles => [...prevFiles, ...files]);
-      setPreviews(prevPreviews => [...prevPreviews, ...previewUrls]);
-    });
+    const files = Array.from(e.dataTransfer.files);
+    await addFiles(files);
     
     // EXIF data extraction is now handled by the useEffect hook that watches selectedFiles
   };
@@ -497,9 +599,11 @@ export default function HabitatUpload() {
   const removeImage = (index) => {
     const updatedFiles = [...selectedFiles];
     const updatedPreviews = [...previews];
+    const updatedUploadedUrls = [...uploadedUrls];
     
     updatedFiles.splice(index, 1);
     updatedPreviews.splice(index, 1);
+    updatedUploadedUrls.splice(index, 1);
   
     // If no images remain, clear the EXIF data and form fields
     if (updatedFiles.length === 0) {
@@ -524,6 +628,7 @@ export default function HabitatUpload() {
     // Always update the files/previews state last to ensure only one re-render
     setSelectedFiles(updatedFiles);
     setPreviews(updatedPreviews);
+    setUploadedUrls(updatedUploadedUrls);
   };
 
   const removeExistingImage = (index) => {
@@ -549,6 +654,11 @@ export default function HabitatUpload() {
     // Validation for edits - must have at least one image (either existing or new)
     if (isEditing && existingImages.length === 0 && (!selectedFiles || selectedFiles.length === 0)) {
       setError('Your vegetation type must have at least one image');
+      return;
+    }
+
+    if (selectedFiles.length > 0 && existingImages.length + selectedFiles.length > MAX_IMAGES_PER_RECORD) {
+      setError(`A record can have at most ${MAX_IMAGES_PER_RECORD} photos. Please remove some.`);
       return;
     }
     
@@ -591,41 +701,34 @@ export default function HabitatUpload() {
     setError('');
 
     try {
-      let updatedImageUrls = [...existingImages]; // Start with existing images
-      
-      // Upload new images to Cloudinary if any
-      if (selectedFiles && selectedFiles.length > 0) {
-        const formData = new FormData();
-        for (const file of selectedFiles) {
-          formData.append('image', file);
-        }
-        
-        setUploadProgress(30);
-        
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        
-        setUploadProgress(70);
-        
-        const isJson = (uploadResponse.headers.get('content-type') || '').includes('application/json');
-        const uploadData = isJson ? await uploadResponse.json() : null;
-        
-        if (!uploadResponse.ok || !uploadData) {
-          if (uploadResponse.status === 413) {
-            throw new Error('Image is too large to upload. Try a smaller image.');
-          }
+      // Upload new photos straight to Cloudinary, one at a time. Photos that
+      // already uploaded (in an earlier, failed attempt) are not sent again.
+      const newImageUrls = [...uploadedUrls];
+      const total = selectedFiles.length;
+      for (let i = 0; i < total; i++) {
+        if (newImageUrls[i]) continue;
+        const file = selectedFiles[i];
+        setUploadStatus(`Uploading photo ${i + 1} of ${total}…`);
+        try {
+          newImageUrls[i] = await uploadImageToCloudinary(file, (fraction) => {
+            setUploadProgress(Math.round(((i + fraction) / total) * 85));
+          });
+        } catch (uploadError) {
+          setUploadedUrls(newImageUrls);
+          const done = newImageUrls.filter(Boolean).length;
           throw new Error(
-            uploadData?.message || `Upload failed (server error ${uploadResponse.status}). Please try again.`
+            `${file.name} could not be uploaded: ${uploadError.message} ` +
+            `${done} of ${total} photos are uploaded and kept. Press the button again to retry the rest.`
           );
         }
-        
-        // Add new images to the array
-        updatedImageUrls = [...updatedImageUrls, ...uploadData.imageUrls];
+        setUploadProgress(Math.round(((i + 1) / total) * 85));
       }
+      setUploadedUrls(newImageUrls);
+      setUploadStatus('Saving record…');
+
+      const updatedImageUrls = [...existingImages, ...newImageUrls];
       
-      setUploadProgress(80);
+      setUploadProgress(90);
       
       // Prepare data for API call
       const habitatData = {
@@ -696,6 +799,7 @@ export default function HabitatUpload() {
       setLongitude('');
       setCoordinateUncertainty('');
       setPreviews([]);
+      setUploadedUrls([]);
       setExistingImages([]);
       
       setSuccess(isEditing ? 'Vegetation Record updated successfully!' : 'Vegetation Record uploaded successfully!');
@@ -710,6 +814,7 @@ export default function HabitatUpload() {
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+      setUploadStatus('');
     }
   };
 
@@ -747,9 +852,10 @@ export default function HabitatUpload() {
                   {existingImages.map((imageUrl, index) => (
                     <div key={`existing-${index}`} className="relative h-64 inline-block">
                       <Image
-                        src={imageUrl}
+                        src={cloudinaryImageUrl(imageUrl, 'thumb')}
                         alt={`Existing Image ${index + 1}`}
                         fill
+                        unoptimized
                         className="object-contain"
                       />
                       <button
@@ -804,6 +910,9 @@ export default function HabitatUpload() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 <p className="mt-2">Click to upload vegetation record images or drag and drop files here</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Up to {MAX_IMAGES_PER_RECORD} photos, max {formatMegabytes(MAX_IMAGE_BYTES)} and {MAX_IMAGE_MEGAPIXELS} MP each (JPG, PNG, HEIC, WebP). Photos are stored at original quality.
+                </p>
               </div>
             ) }
             
@@ -828,7 +937,7 @@ export default function HabitatUpload() {
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept="image/*"
+              accept={FILE_INPUT_ACCEPT}
               multiple
               className="hidden"
               onClick={(e) => {
@@ -841,11 +950,14 @@ export default function HabitatUpload() {
         
         {/* Progress bar for upload */}
         {isUploading && (
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-            <div 
-              className="bg-emerald-700 h-2.5 rounded-full transition-all duration-300" 
-              style={{ width: `${uploadProgress}%` }}
-            ></div>
+          <div className="mb-4">
+            {uploadStatus && <p className="text-sm text-gray-700 mb-1">{uploadStatus}</p>}
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-emerald-700 h-2.5 rounded-full transition-all duration-300" 
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
           </div>
         )}
         

@@ -1,6 +1,6 @@
 # Image upload size — open issue and plan
 
-Status: **open** (written 2026-10-29, plan updated 2026-10-30). Written for humans and agents picking this up later.
+Status: **implemented 2026-11-01, waiting for a test with the real Cloudinary account** (written 2026-10-29, plan updated 2026-10-30). See "Implementation" at the end. Written for humans and agents picking this up later.
 
 ## The problem
 
@@ -144,3 +144,48 @@ Agreed in discussion, not implemented yet. Applies to the signed direct upload p
 ### Account
 - Use a strong password and two-factor login on the Cloudinary account; limit who has Console access.
 - If the API secret is ever exposed, regenerate it in the Console and update the server environment.
+
+## Implementation (2026-11-01)
+
+Built on branch `image-upload-size-notes` as decided above.
+
+### What changed
+- `src/lib/imageUpload.js` (new): the limits (10 photos, 10 MB, 25 MP), upload folder (`your_app_name`, unchanged), allowed formats, display URL helper and the server-side URL check. Change limits here after a plan upgrade.
+- `src/app/api/upload/sign/route.js` (new): checks the login, returns a signature for **one** photo (folder, unique public id, allowed formats and timestamp are signed). Never returns the secret.
+- `src/app/api/upload/route.js` **removed** (old path through nginx and the app, base64 in memory).
+- `src/components/habitat/HabitatUpload.jsx` (create and edit mode):
+  - Checks type, size, megapixels and photo count when files are picked or dropped, with a message naming the file. HEIC dimensions cannot be read in most browsers; Cloudinary enforces 25 MP for those.
+  - On submit, uploads photos one at a time directly to Cloudinary, showing "Uploading photo 3 of 10".
+  - If one fails, the record is not saved; the uploaded ones are kept and the button retries only the rest.
+  - The record is saved only after every photo has uploaded.
+- `src/app/api/habitats/route.js` POST and PUT: images must be plain URLs in our Cloudinary cloud and folder, max 10. In edit mode, images already on the record are accepted as they are (old records keep working); an old record with more than 10 may keep them but cannot add more.
+- Display: images now load **directly from Cloudinary** (`unoptimized` on `next/image`). Before, `next/image` sent every image through our server and re-compressed it at quality 75.
+  - Thumbnails (`c_limit,w_400,q_auto,f_auto`): list cards, map popup, home page, form.
+  - Large (`c_limit,w_2560,q_auto:best,f_auto`): detail view, home slider. This replaces the `w_1600` idea above (too small for analysis).
+  - Detail view has **Full resolution** (`q_auto:best,f_auto`, original pixel size, HEIC shown as a browser format) and **Original file** (exactly as uploaded) links.
+  - The ZIP download still fetches the originals (unchanged).
+- `DEPLOYMENT.md`: nginx body limit no longer needed for photos; troubleshooting updated.
+
+### Tested here (no real Cloudinary account or database in the agent session)
+- Production build and lint pass (only warnings that already existed before this change).
+- Signature code matches Cloudinary's documented example.
+- Browser test with the real app, a test login, Cloudinary and the database save intercepted. It covered, in edit mode with 2 existing images:
+  - Thumbnails shown directly from Cloudinary.
+  - Messages for 11 MB, 30 MP, GIF and the 11th photo.
+  - The 4th upload failing: the record is not saved, and the retry uploads only the remaining 5.
+  - Each upload correctly signed and sent straight to Cloudinary; the secret never sent to the browser.
+  - Saved URLs = 2 existing + 8 new, in order, other fields unchanged.
+  - List thumbnail, large detail view and both links.
+- The sign route returns 401 without login.
+
+### Owner to-do and checks with the real account
+1. Run locally (`pnpm run dev`) or deploy, then upload a record with a few photos (including an iPhone HEIC if possible) and edit an existing record.
+2. Confirm the new image URLs contain `/your_app_name/`. The server rejects new images outside that folder. If the account uses Cloudinary's "dynamic folders" and the folder does not appear in the URL, saving fails with "One or more images were not uploaded through this application"; adjust `isOwnCloudinaryImageUrl` then.
+3. **Strict transformations** (security checklist):
+   - Open a record so the thumbnail, large and full-resolution versions are created once.
+   - In the Cloudinary Console, mark those three transformations as allowed for strict mode.
+   - Then turn on Settings > Security > Strict transformations, and check that images still show.
+
+### Still open
+- Rate limiting of `/api/upload/sign` (optional, not done).
+- Photos uploaded for a form that is then abandoned stay in Cloudinary unused. Images removed from a record, or from a deleted record, are also not deleted from Cloudinary; this was already the case before the change.

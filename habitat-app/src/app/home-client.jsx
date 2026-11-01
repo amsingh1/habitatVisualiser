@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import ImageSlider from '@/components/ImageSlider';
+import { cloudinaryImageUrl } from '@/lib/imageUpload';
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -164,7 +165,7 @@ function RecentlyAdded() {
           <div key={index} className="bg-white border border-stone-200 rounded-xl overflow-hidden">
             <div className="h-24 w-full">
               <img
-                src={image.imageUrl[0]}
+                src={cloudinaryImageUrl(image.imageUrl[0], 'thumb')}
                 alt={image.habitatName || 'Vegetation type image'}
                 className="h-full w-full object-cover"
               />

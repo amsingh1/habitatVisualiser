@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import DownloadModal from './DownloadModal';
 import ConfirmationModal from '../ui/ConfirmationModal';
+import { cloudinaryImageUrl } from '@/lib/imageUpload';
 
 // Create a fetcher function
 const fetcher = (...args) => fetch(...args).then(res => res.json());
@@ -404,9 +405,10 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
         >
           {habitat.imageUrl && normalizeImageUrl(habitat.imageUrl[0]) && (
             <Image
-              src={normalizeImageUrl(habitat.imageUrl[0])}
+              src={cloudinaryImageUrl(normalizeImageUrl(habitat.imageUrl[0]), 'thumb')}
               alt={`${habitat.habitatName}`}
               fill
+              unoptimized
               className="object-cover hover:scale-105 transition-transform duration-300"
             />
           )}
@@ -529,12 +531,37 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
               {/* Main image carousel */}
               <div className="relative h-[80vh] w-full">
                 <Image
-                  src={validUrls[safeIndex]}
+                  src={cloudinaryImageUrl(validUrls[safeIndex], 'large')}
                   alt={`${selectedHabitat.habitatName} - Image ${safeIndex + 1}`}
                   fill
+                  unoptimized
                   className="object-contain"
                   priority
                 />
+
+                {/* Full resolution for close inspection, and the file exactly as uploaded */}
+                <div className="absolute bottom-4 left-4 flex gap-2">
+                  <a
+                    href={cloudinaryImageUrl(validUrls[safeIndex], 'full')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-black bg-opacity-40 text-white px-2.5 py-1 rounded-full text-xs hover:bg-opacity-60 transition-opacity"
+                    title="Open the photo at full resolution in a new tab (zoom in there)"
+                  >
+                    Full resolution
+                  </a>
+                  <a
+                    href={validUrls[safeIndex]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-black bg-opacity-40 text-white px-2.5 py-1 rounded-full text-xs hover:bg-opacity-60 transition-opacity"
+                    title="Open the original file exactly as uploaded"
+                  >
+                    Original file
+                  </a>
+                </div>
                 
                 {/* Navigation arrows */}
                 {validUrls.length > 1 && (
@@ -628,9 +655,10 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
                       }`}
                     >
                       <Image
-                        src={url}
+                        src={cloudinaryImageUrl(url, 'thumb')}
                         alt={`Thumbnail ${index + 1}`}
                         fill
+                        unoptimized
                         className="object-cover rounded"
                       />
                     </div>

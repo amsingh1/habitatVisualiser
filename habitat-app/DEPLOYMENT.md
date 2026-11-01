@@ -77,9 +77,9 @@ proxy_set_header X-Forwarded-Proto $scheme;
 proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
 ```
 
-Allow large request bodies. Users upload phone photos (often 3–10 MB). nginx rejects bodies over 1 MB by
-default with an HTML "413 Request Entity Too Large" page, which the app shows as
-`Unexpected token '<' ... is not valid JSON`. Set a limit in the `server` (or `location`) block:
+Photos are uploaded by the browser directly to Cloudinary (signed upload), so they no longer pass through
+nginx or the app, and nginx's 1 MB default body limit does not affect them. The setting below is optional
+headroom for other requests; it was required by the old upload path:
 ```
 client_max_body_size 25m;
 proxy_read_timeout 120s;
@@ -95,8 +95,8 @@ Then `nginx -t && systemctl reload nginx`. Caddy has no body limit by default, s
 - Port 3001 in use: free it or change the port mapping in `docker-compose.yml`.
 - `mongodb` not healthy: `docker compose logs mongodb` (look for restore errors on first start).
 - Google sign-in fails: check `NEXTAUTH_URL` and the registered redirect URI.
-- Uploading an image fails with `Unexpected token '<', "<html>..." is not valid JSON`: the proxy is rejecting
-  the upload, almost always nginx's 1 MB default body limit. Set `client_max_body_size 25m;` (see TLS section)
-  and reload nginx. Check the status of the `/api/upload` request in the browser dev tools Network tab:
-  413 = size limit, 502/504 = proxy timeout.
+- Uploading a photo fails: the form names the photo and the reason. Check the browser dev tools Network tab:
+  `/api/upload/sign` 401 = not logged in, 500 = `CLOUDINARY_*` variables missing; the request to
+  `api.cloudinary.com` shows Cloudinary's own error (e.g. file over the plan's 10 MB / 25 MP limit).
+  Limits are in `src/lib/imageUpload.js`; details in `docs/notes/image-upload-size.md`.
 - Docker Hub repo private: `docker login -u <username>` with the access token before `docker compose pull`.

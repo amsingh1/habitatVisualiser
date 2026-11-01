@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Habitat from '@/models/Habitat';
 import { parseCoordinateUncertainty } from '@/lib/coordinateUncertainty';
+import { validateImageUrls } from '@/lib/imageUpload';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
@@ -36,6 +37,15 @@ export async function POST(req) {
     if (uncertainty.error) {
       return NextResponse.json(
         { success: false, message: uncertainty.error },
+        { status: 400 }
+      );
+    }
+
+    // Images must be our own Cloudinary uploads (direct signed upload), max 10
+    const images = validateImageUrls(imageUrl, { cloudName: process.env.CLOUDINARY_CLOUD_NAME });
+    if (images.error) {
+      return NextResponse.json(
+        { success: false, message: images.error },
         { status: 400 }
       );
     }
@@ -350,6 +360,21 @@ export async function PUT(req) {
       );
     }
     
+    // New images must be our own Cloudinary uploads; images already on the
+    // record may be kept as they are
+    if (imageUrl !== undefined) {
+      const images = validateImageUrls(imageUrl, {
+        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+        existingUrls: existingHabitat.imageUrl || [],
+      });
+      if (images.error) {
+        return NextResponse.json(
+          { success: false, message: images.error },
+          { status: 400 }
+        );
+      }
+    }
+
     // Prepare data for updating
     const resolvedVegClass = vegClass !== undefined ? vegClass : existingHabitat.vegClass;
     const resolvedVegOrder = vegOrder !== undefined ? vegOrder : existingHabitat.vegOrder;

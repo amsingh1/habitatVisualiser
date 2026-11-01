@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
+import { cloudinaryImageUrl } from '@/lib/imageUpload';
 
 const fetcher = (...args) => fetch(...args).then(res => res.json());
 
@@ -45,7 +46,7 @@ export default function ImageSlider() {
           }`}
         >
           <img
-            src={image.imageUrl[0]} // Assuming imageUrl is an array and we want the first one
+            src={cloudinaryImageUrl(image.imageUrl[0], 'large')} // First image of the record, resized by Cloudinary
             alt={image.habitatName || 'Vegetation type image'}
             className="w-full h-full object-cover"
           />
