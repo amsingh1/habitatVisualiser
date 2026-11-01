@@ -83,8 +83,8 @@ Free plan, 0.53 of 25 credits used in the last 30 days: storage 531 MB (about 20
 
 ### Still needed from the customer
 - ~~Cloudinary plan, its monthly credits and current usage, and its per-image size limit.~~ Done: see confirmed limits below.
-- Maximum number of images per record.
-- Confirm "repository" means Cloudinary.
+- ~~Maximum number of images per record.~~ Done: 10.
+- ~~Confirm "repository" means Cloudinary.~~ Done: staying on Cloudinary.
 
 ### Things to check when implementing
 - Create and edit mode both in `HabitatUpload.jsx`, and every place that renders `imageUrl`.
@@ -105,6 +105,14 @@ What this means for the plan:
 - **New: photos above 25 megapixels are rejected by Cloudinary even under 10 MB.** Phones save 12 MP by default (fine), but 48/50 MP modes would fail. The form should check pixel dimensions as well as file size, with a clear message ("IMG_123.jpg is 48 MP, the maximum is 25 MP"). Browsers cannot read HEIC dimensions in most cases, so for HEIC rely on Cloudinary's error and show it clearly.
 - Display transformations of originals fit within the 100 MB transformation limit.
 - These limits change with a paid plan; keep them in one config value so they are easy to raise.
+
+## Owner decisions (2026-11-01)
+
+- **Max 10 photos per record.** Each photo uploads on its own (10 MB / 25 MP each), so no combined size limit.
+- **Every logged-in user can upload**, as today. No role restriction.
+- **Ownership stays exactly as today.** The habitat save routes (`src/app/api/habitats/...`) take `user`, `userName` and `userEmail` from the NextAuth session on the server, not from the upload, so "my images" filtering and edit/delete permissions are unchanged. Only the photo upload path changes.
+- **Use the current Cloudinary account** (already configured through `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`). No separate test account while the app is in development. Keep the existing upload folder (`your_app_name`, set in `src/app/api/upload/route.js`) so new and old images stay together.
+- The Cloudinary keys are not in the cloud agent session (`.env.local` is git-ignored), so real uploads must be tested locally or on the deployed app.
 
 ## Security checklist for direct upload and display (2026-11-01)
 
