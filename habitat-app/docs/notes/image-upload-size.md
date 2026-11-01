@@ -91,3 +91,34 @@ Free plan, 0.53 of 25 credits used in the last 30 days: storage 531 MB (about 20
 - Error handling for Cloudinary's own error responses (different from today's 413 handling).
 - Cleanup of uploaded images if the habitat save fails (not handled today either).
 - Cannot be tested without the customer's real Cloudinary account and proxy.
+
+## Security checklist for direct upload and display (2026-11-01)
+
+Agreed in discussion, not implemented yet. Applies to the signed direct upload plan above.
+
+### Secrets and signing
+- **API secret stays on the server only** (environment variables, as today). Never put it in frontend code, `NEXT_PUBLIC_*` variables, logs or error messages. The cloud name and API key are public and may be used in the browser.
+- **Only the backend creates signatures.** `/api/upload/sign` returns a signature, timestamp and folder, never the secret. The browser sends the photo to Cloudinary's fixed upload address (`https://api.cloudinary.com/v1_1/<cloud-name>/image/upload`) with that signature.
+- **Check the NextAuth session in the sign route** and refuse requests without a login. Decide whether every logged-in user may upload or only certain roles (open question).
+- **Lock the upload settings in the signature:** the folder (for example `habitats/`) and allowed formats (JPEG, PNG, HEIC/HEIF, WebP). Cloudinary rejects an upload if a signed setting was changed.
+- **One signature per photo**, locked to a unique file name (public_id), so a signature cannot be reused for extra uploads. Cloudinary signatures expire after about one hour; this cannot be shortened.
+- Optional: rate-limit the sign route per user, so one account cannot request thousands of signatures.
+
+### Limits
+- **Check file size and number of photos in the form** before upload (proposed: 10 MB per photo, 10 photos per record; to be confirmed). This is for user experience only, since it can be bypassed.
+- **Cloudinary enforces its own per-file cap** from the plan (about 10 MB on the free plan; confirm in the Console). A Cloudinary signature cannot carry a size limit, unlike an S3 presigned POST.
+- **The server checks the number of images again** when saving the record.
+
+### Saving the record
+- **Validate every submitted image URL on the server** before saving: it must be `https://res.cloudinary.com/<our-cloud-name>/...` inside our folder. Reject anything else, so arbitrary links cannot be stored or shown.
+- Only the owner (or an admin) may edit or delete a record's images. Check this in create and edit mode.
+- Plan cleanup of uploaded photos when the record is never saved, so orphaned images do not use storage credits.
+
+### Display
+- **Turn on "Strict transformations" in the Cloudinary Console** (Settings > Security). Without it, anyone can request arbitrary sizes of our images in the URL and use up transformation credits. With it, only the sizes the app uses (thumbnail, large view, original) are allowed; they must be listed as named or allowed transformations.
+- Images load directly from Cloudinary in the browser, not through our server. This exposes nothing new: image URLs are already public today.
+- **Image URLs are public:** anyone who has the URL can view the photo. If photos must be private, use Cloudinary's private/authenticated delivery with signed viewing URLs instead. This is a separate decision (open question).
+
+### Account
+- Use a strong password and two-factor login on the Cloudinary account; limit who has Console access.
+- If the API secret is ever exposed, regenerate it in the Console and update the server environment.
