@@ -62,7 +62,9 @@ const RETRY_DELAYS_MS = [2000, 5000];
 // Uploads one photo straight from the browser to Cloudinary, using a
 // signature from our server (the API secret never reaches the browser).
 // Resolves with the stored image URL.
-async function uploadImageToCloudinary(file, onProgress) {
+// control: { cancelled, xhr } shared with the form, so leaving the page can
+// stop the upload in progress.
+async function uploadImageToCloudinary(file, onProgress, control) {
   let signResponse;
   try {
     signResponse = await fetch('/api/upload/sign', {
@@ -97,6 +99,12 @@ async function uploadImageToCloudinary(file, onProgress) {
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    if (control.cancelled) {
+      reject(new PhotoUploadError('Upload cancelled.', 'cancelled'));
+      return;
+    }
+    control.xhr = xhr;
+    xhr.onabort = () => reject(new PhotoUploadError('Upload cancelled.', 'cancelled'));
     xhr.open('POST', sign.uploadUrl);
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(event.loaded / event.total);
@@ -128,10 +136,11 @@ async function uploadImageToCloudinary(file, onProgress) {
 // Uploads one photo, retrying temporary problems automatically
 // (RETRY_DELAYS_MS.length extra attempts). onRetry(attemptNumber) is called
 // before each retry so the form can say what is happening.
-async function uploadImageWithRetry(file, onProgress, onRetry) {
+async function uploadImageWithRetry(file, onProgress, onRetry, control) {
   for (let attempt = 0; ; attempt++) {
+    if (control.cancelled) throw new PhotoUploadError('Upload cancelled.', 'cancelled');
     try {
-      return await uploadImageToCloudinary(file, onProgress);
+      return await uploadImageToCloudinary(file, onProgress, control);
     } catch (err) {
       const kind = err instanceof PhotoUploadError ? err.kind : 'temporary';
       if (kind !== 'temporary' || attempt >= RETRY_DELAYS_MS.length) {
@@ -214,6 +223,37 @@ export default function HabitatUpload() {
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [isUploading]);
+
+  // Ask before following a link inside the app (top menu, footer...) while
+  // photos are uploading. Runs in the capture phase so it sees the click
+  // before Next.js <Link> navigates.
+  useEffect(() => {
+    if (!isUploading) return;
+    const confirmLeave = (event) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target.closest?.('a[href]');
+      if (!link || (link.target && link.target !== '_self')) return;
+      const url = new URL(link.href, window.location.href);
+      if (url.origin === window.location.origin && url.pathname === window.location.pathname && url.search === window.location.search) return;
+      if (!window.confirm('Photos are still uploading. If you leave this page, the upload stops and this record is not saved. Leave this page?')) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    document.addEventListener('click', confirmLeave, true);
+    return () => document.removeEventListener('click', confirmLeave, true);
+  }, [isUploading]);
+
+  // Upload in progress, if any: { cancelled, xhr }. Leaving the page (the
+  // component unmounts) stops it, so nothing is saved after the user left.
+  const uploadControlRef = useRef(null);
+  useEffect(() => () => {
+    const control = uploadControlRef.current;
+    if (control) {
+      control.cancelled = true;
+      control.xhr?.abort();
+    }
+  }, []);
   const [existingImages, setExistingImages] = useState([]);
   const [showMap, setShowMap] = useState(false);
   const fileInputRef = useRef(null);
@@ -782,6 +822,9 @@ export default function HabitatUpload() {
     setUploadProgress(0);
     setError('');
 
+    const control = { cancelled: false, xhr: null };
+    uploadControlRef.current = control;
+
     try {
       // Upload new photos straight to Cloudinary, one at a time. Photos that
       // already uploaded (in an earlier attempt) are not sent again. A failed
@@ -810,10 +853,13 @@ export default function HabitatUpload() {
               setUploadStatus(
                 `Uploading photo ${i + 1} of ${total}… connection problem, trying again (attempt ${attempt} of ${RETRY_DELAYS_MS.length + 1})`
               );
-            }
+            },
+            control
           );
           setUploadedUrls([...newImageUrls]);
         } catch (uploadError) {
+          // User left the page: stop quietly, do not save.
+          if (uploadError.kind === 'cancelled' || control.cancelled) return;
           newErrors[i] = { message: uploadError.message, kind: uploadError.kind || 'temporary' };
           setUploadErrors([...newErrors]);
           if (uploadError.kind === 'session') {
@@ -846,6 +892,7 @@ export default function HabitatUpload() {
         }
         throw new Error(message);
       }
+      if (control.cancelled) return;
       setUploadStatus('Saving record…');
 
       const updatedImageUrls = [...existingImages, ...newImageUrls];
@@ -908,9 +955,14 @@ export default function HabitatUpload() {
       // Keep the filled form visible (read-only) with the confirmation for a
       // moment, then open the list. It used to clear the form first, which
       // showed an empty form for 2 seconds before leaving.
+      // The user may have left while the record was being saved; then do not
+      // pull them back to the list.
+      if (control.cancelled) return;
       setIsSaved(true);
       setSuccess(isEditing ? 'Vegetation Record updated successfully!' : 'Vegetation Record uploaded successfully!');
-      setTimeout(() => router.push('/habitats'), 1000);
+      setTimeout(() => {
+        if (!control.cancelled) router.push('/habitats');
+      }, 1000);
       
     } catch (error) {
       console.error('Error:', error);

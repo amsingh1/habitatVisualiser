@@ -176,9 +176,13 @@ Built on branch `image-upload-size-notes` as decided above.
   - If only the save fails, the message says the photos are kept and the button saves again without re-uploading.
 - **Expired login:** the form says to sign in again in a new tab and press the button again; uploaded photos are kept.
 - **While uploading:**
-  - Closing or reloading the tab asks for confirmation.
+  - Closing or reloading the tab asks for confirmation (browser's own dialog).
+  - Clicking any link inside the app (top menu, footer) asks: "Photos are still uploading. If you leave this page, the upload stops and this record is not saved. Leave this page?"
+    - Stay: the upload continues.
+    - Leave: the current upload is stopped, no further photos are sent and the record is not saved.
   - Cancel, adding photos and the ✕ buttons are disabled.
-  - Clicking a link in the navbar is not blocked.
+  - Not covered by the question: the browser's Back button, and the desktop "Sign out" menu button (a button, not a link). For Sign out, the browser's leave-page dialog still appears.
+- **Background uploading** (continue while the user browses elsewhere) was considered and not chosen (2026-11-01). The record is saved only after all photos upload, and failures need the user, so it would need a separate upload queue screen. Revisit if field users on slow connections often wait minutes.
 - **After a successful save:** the form stays filled and read-only with the success message and "Saved ✓ Opening the list…" for 1 second, then the list opens. It used to clear the form first, which showed an empty form for 2 seconds.
 
 ### Tested here (no real Cloudinary account or database in the agent session)
@@ -197,6 +201,11 @@ Built on branch `image-upload-size-notes` as decided above.
   - Removing the rejected photo, then retrying, which uploaded only the failed photo.
   - A failed save followed by a successful save, with no re-upload.
   - The leave-page warning, and the form not going blank after saving.
+- Third browser test for leaving during an upload:
+  - No question when nothing is uploading.
+  - The question appears for top-menu and footer links.
+  - Stay keeps the upload going.
+  - Leave stops it: the next photo is not sent, the record is not saved, and the user is not pulled back.
 
 ### Owner to-do and checks with the real account
 1. Run locally (`pnpm run dev`) or deploy, then upload a record with a few photos (including an iPhone HEIC if possible) and edit an existing record.
