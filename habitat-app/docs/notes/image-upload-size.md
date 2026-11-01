@@ -156,8 +156,8 @@ Built on branch `image-upload-size-notes` as decided above.
 - `src/components/habitat/HabitatUpload.jsx` (create and edit mode):
   - Checks type, size, megapixels and photo count when files are picked or dropped, with a message naming the file. HEIC dimensions cannot be read in most browsers; Cloudinary enforces 25 MP for those.
   - On submit, uploads photos one at a time directly to Cloudinary, showing "Uploading photo 3 of 10".
-  - If one fails, the record is not saved; the uploaded ones are kept and the button retries only the rest.
   - The record is saved only after every photo has uploaded.
+  - Failure handling: see "Upload failures: what the user sees" below.
 - `src/app/api/habitats/route.js` POST and PUT: images must be plain URLs in our Cloudinary cloud and folder, max 10. In edit mode, images already on the record are accepted as they are (old records keep working); an old record with more than 10 may keep them but cannot add more.
 - Display: images now load **directly from Cloudinary** (`unoptimized` on `next/image`). Before, `next/image` sent every image through our server and re-compressed it at quality 75.
   - Thumbnails (`c_limit,w_400,q_auto,f_auto`): list cards, map popup, home page, form.
@@ -165,6 +165,21 @@ Built on branch `image-upload-size-notes` as decided above.
   - Detail view has **Full resolution** (`q_auto:best,f_auto`, original pixel size, HEIC shown as a browser format) and **Original file** (exactly as uploaded) links.
   - The ZIP download still fetches the originals (unchanged).
 - `DEPLOYMENT.md`: nginx body limit no longer needed for photos; troubleshooting updated.
+
+### Upload failures: what the user sees (added 2026-11-01)
+- **Each photo shows its status:** "Uploading… 45%", "✓ Uploaded", "Waiting…", "✕ Failed" (temporary problem, with reason) or "✕ Rejected" (Cloudinary refused the file, e.g. too large; with reason and "remove it with ✕").
+- **Automatic retry** for temporary problems (connection lost, timeouts, Cloudinary 5xx/429): 2 more attempts after 2 s and 5 s, with "connection problem, trying again (attempt 2 of 3)". Rejected files are not retried.
+- **Keeps going** after a failed photo, then shows one summary of all failures. The summary is at the top of the form and next to the buttons.
+- **The button changes:**
+  - "Remove 1 rejected photo to continue" (disabled until the rejected photo is removed).
+  - "Retry 2 failed photos and save" (uploads only the failed ones, then saves).
+  - If only the save fails, the message says the photos are kept and the button saves again without re-uploading.
+- **Expired login:** the form says to sign in again in a new tab and press the button again; uploaded photos are kept.
+- **While uploading:**
+  - Closing or reloading the tab asks for confirmation.
+  - Cancel, adding photos and the ✕ buttons are disabled.
+  - Clicking a link in the navbar is not blocked.
+- **After a successful save:** the form stays filled and read-only with the success message and "Saved ✓ Opening the list…" for 1 second, then the list opens. It used to clear the form first, which showed an empty form for 2 seconds.
 
 ### Tested here (no real Cloudinary account or database in the agent session)
 - Production build and lint pass (only warnings that already existed before this change).
@@ -177,6 +192,11 @@ Built on branch `image-upload-size-notes` as decided above.
   - Saved URLs = 2 existing + 8 new, in order, other fields unchanged.
   - List thumbnail, large detail view and both links.
 - The sign route returns 401 without login.
+- Second browser test for failures, which all behaved as described above:
+  - One photo recovering on automatic retry, one rejected, and one failing all 3 attempts.
+  - Removing the rejected photo, then retrying, which uploaded only the failed photo.
+  - A failed save followed by a successful save, with no re-upload.
+  - The leave-page warning, and the form not going blank after saving.
 
 ### Owner to-do and checks with the real account
 1. Run locally (`pnpm run dev`) or deploy, then upload a record with a few photos (including an iPhone HEIC if possible) and edit an existing record.
