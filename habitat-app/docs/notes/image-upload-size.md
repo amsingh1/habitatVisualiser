@@ -82,7 +82,7 @@ Free plan, 0.53 of 25 credits used in the last 30 days: storage 531 MB (about 20
 - Mobile users on weak connections may time out on large files, so retry matters.
 
 ### Still needed from the customer
-- Cloudinary plan, its monthly credits and current usage, and its per-image size limit.
+- ~~Cloudinary plan, its monthly credits and current usage, and its per-image size limit.~~ Done: see confirmed limits below.
 - Maximum number of images per record.
 - Confirm "repository" means Cloudinary.
 
@@ -91,6 +91,20 @@ Free plan, 0.53 of 25 credits used in the last 30 days: storage 531 MB (about 20
 - Error handling for Cloudinary's own error responses (different from today's 413 handling).
 - Cleanup of uploaded images if the habitat save fails (not handled today either).
 - Cannot be tested without the customer's real Cloudinary account and proxy.
+
+## Confirmed Cloudinary free plan limits (2026-11-01)
+
+From the customer's Cloudinary Console (Billing > Change Plan, current Free plan):
+- 25 monthly credits; 3 users; 1 product environment; 500 admin API limit.
+- **10 MB max image file size** (raw files also 10 MB; video 100 MB).
+- **25 MP max image megapixel** (50 MP across all frames, for animated images).
+- 100 MB max image transformation size; 40 MB max video transformation size.
+
+What this means for the plan:
+- The per-photo limit of 10 MB is confirmed.
+- **New: photos above 25 megapixels are rejected by Cloudinary even under 10 MB.** Phones save 12 MP by default (fine), but 48/50 MP modes would fail. The form should check pixel dimensions as well as file size, with a clear message ("IMG_123.jpg is 48 MP, the maximum is 25 MP"). Browsers cannot read HEIC dimensions in most cases, so for HEIC rely on Cloudinary's error and show it clearly.
+- Display transformations of originals fit within the 100 MB transformation limit.
+- These limits change with a paid plan; keep them in one config value so they are easy to raise.
 
 ## Security checklist for direct upload and display (2026-11-01)
 
