@@ -7,6 +7,7 @@ Next.js app in `habitat-app/` (MongoDB, NextAuth, Cloudinary for images). Deploy
 Open issues, decisions and history are written down in `habitat-app/docs/notes/`. Read the relevant note before working on a related area, and add or update a note when you leave something unfinished.
 
 - `habitat-app/docs/notes/image-upload-size.md` — photos upload directly from the browser to Cloudinary (signed, 10 photos, 10 MB / 25 MP each) and display through Cloudinary URL transformations; decisions, security checklist and owner to-dos are there. Do not add image compression: original-quality images are required.
+- `habitat-app/docs/notes/upload-security-backlog.md` — postponed security work for upload and signup (rate limits on signing, registration and login; email/Google verification; Cloudinary cleanup and account settings). Read before touching `/api/upload/sign` or `/api/auth/register`.
 
 ## Working rules
 

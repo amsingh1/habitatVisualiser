@@ -216,5 +216,5 @@ Built on branch `image-upload-size-notes` as decided above.
    - Then turn on Settings > Security > Strict transformations, and check that images still show.
 
 ### Still open
-- Rate limiting of `/api/upload/sign` (optional, not done).
+- Rate limiting of `/api/upload/sign`: postponed, see `upload-security-backlog.md`.
 - Photos uploaded for a form that is then abandoned stay in Cloudinary unused. Images removed from a record, or from a deleted record, are also not deleted from Cloudinary; this was already the case before the change.
