@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-le
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import Image from 'next/image';
+import { cloudinaryImageUrl } from '@/lib/imageUpload';
 
 // Separate component to add layer control to the map
 function LayerControl() {
@@ -147,10 +148,11 @@ export default function MapComponent({ habitats, mapCenter }) {
               {habitat.imageUrl && habitat.imageUrl.length > 0 && (
                 <div className="mt-2 relative overflow-hidden rounded group">
                   <Image 
-                    src={habitat.imageUrl[0]} 
+                    src={cloudinaryImageUrl(habitat.imageUrl[0], 'thumb')} 
                     alt={habitat.habitatName}
                     width={150}
                     height={100}
+                    unoptimized
                     className="rounded transition-transform group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
