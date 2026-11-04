@@ -8,6 +8,7 @@ Open issues, decisions and history are written down in `habitat-app/docs/notes/`
 
 - `habitat-app/docs/notes/image-upload-size.md` — photos upload directly from the browser to Cloudinary (signed, 10 photos, 10 MB / 25 MP each) and display through Cloudinary URL transformations; decisions, security checklist and owner to-dos are there. Do not add image compression: original-quality images are required.
 - `habitat-app/docs/notes/upload-security-backlog.md` — postponed security work for upload and signup (rate limits on signing, registration and login; email/Google verification; Cloudinary cleanup and account settings). Read before touching `/api/upload/sign` or `/api/auth/register`.
+- `habitat-app/docs/notes/break-test-2026-11-04.md` — results of a review and attempt to break the app (open, nothing fixed yet): page-crashing records, email enumeration, stack trace leaks, stuck DB connection, email exposure, ZIP memory, CSV export.
 
 ## Working rules
 
