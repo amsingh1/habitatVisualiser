@@ -3,6 +3,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+// Second line of a vegetation type suggestion, e.g. "Order" or
+// "Alliance · Code: RA01A". The level tells the user that picking an order or
+// class finds every record that belongs to it.
+function vegSuggestionDetail(suggestion) {
+  const parts = [];
+  if (suggestion.level) parts.push(suggestion.level);
+  if (suggestion.code) parts.push(`Code: ${suggestion.code}`);
+  return parts.join(' · ');
+}
+
 export default function SearchHabitatComponent({ context = 'habitats' }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -575,7 +585,9 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                     type="text"
                     value={searchText}
                     onChange={handleSearchChange}
-                    placeholder={`Search by ${availableFields.find(f => f.id === selectedField)?.label || 'field'}...`}
+                    placeholder={selectedField === 'habitatName'
+                      ? 'Search by alliance, order or class...'
+                      : `Search by ${availableFields.find(f => f.id === selectedField)?.label || 'field'}...`}
                     className="flex-1 h-10 px-4 py-2 text-gray-700 focus:outline-none"
                   />
                   
@@ -622,8 +634,8 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                                     ? `${suggestion.habitatName.substring(0, 40)}...` 
                                     : suggestion.habitatName}
                                 </span>
-                                {suggestion.code && (
-                                  <span className="text-sm text-gray-500">Code: {suggestion.code}</span>
+                                {vegSuggestionDetail(suggestion) && (
+                                  <span className="text-sm text-gray-500">{vegSuggestionDetail(suggestion)}</span>
                                 )}
                               </div>
                             )}
@@ -671,7 +683,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                   value={advancedCriteria.habitatName}
                   onChange={(e) => handleAdvancedInputChange('habitatName', e.target.value)}
                   onFocus={() => setActiveSuggestionField('habitatName')}
-                  placeholder="Vegetation type..."
+                  placeholder="Vegetation type (alliance, order or class)..."
                   className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
                 {advancedCriteria.habitatName && (
@@ -699,8 +711,8 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                         ) : (
                           <div className="flex flex-col">
                             <span className="font-medium">{suggestion.habitatName}</span>
-                            {suggestion.code && (
-                              <span className="text-sm text-gray-500">Code: {suggestion.code}</span>
+                            {vegSuggestionDetail(suggestion) && (
+                              <span className="text-sm text-gray-500">{vegSuggestionDetail(suggestion)}</span>
                             )}
                           </div>
                         )}

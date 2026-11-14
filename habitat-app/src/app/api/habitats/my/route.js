@@ -4,6 +4,7 @@ import Habitat from '@/models/Habitat';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import escapeRegex from '@/lib/escapeRegex';
+import { vegTypeCondition } from '@/lib/vegTypeSearch';
 
 export async function GET(req) {
   try {
@@ -51,9 +52,8 @@ export async function GET(req) {
     if (hasAdvancedSearch) {
       // Add conditions for each non-empty field
       if (advancedHabitatName && advancedHabitatName.trim()) {
-        andConditions.push({
-          habitatName: { $regex: '^' + escapeRegex(advancedHabitatName.trim()), $options: 'i' }
-        });
+        // Vegetation type matches the alliance, order or class
+        andConditions.push(vegTypeCondition(advancedHabitatName.trim()));
       }
 
       if (advancedCountry && advancedCountry.trim()) {

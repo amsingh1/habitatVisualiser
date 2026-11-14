@@ -5,6 +5,7 @@ import Habitat from '@/models/Habitat';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import escapeRegex from '@/lib/escapeRegex';
+import { vegTypeSuggestionCondition, buildVegTypeSuggestions } from '@/lib/vegTypeSearch';
 
 // API endpoint to get autocomplete suggestions
 export async function GET(req) {
@@ -48,14 +49,10 @@ export async function GET(req) {
       }
     }
 
-    // For habitatName, do a combined search by name OR EVC code
+    // Vegetation type: match the record's own unit (alliance), its order or
+    // its class, or the unit code. Each suggestion says which level it is.
     if (searchField === 'habitatName') {
-      const orCondition = {
-        $or: [
-          { habitatName: { $regex: '^' + escapeRegex(searchText), $options: 'i' } },
-          { code: { $regex: '^' + escapeRegex(searchText), $options: 'i' } },
-        ]
-      };
+      const orCondition = vegTypeSuggestionCondition(searchText);
 
       if (Object.keys(searchQuery).length > 0) {
         searchQuery = { $and: [searchQuery, orCondition] };
@@ -64,23 +61,12 @@ export async function GET(req) {
       }
 
       const habitats = await Habitat.find(searchQuery)
-        .select('habitatName code')
+        .select('habitatName code vegAlliance vegOrder vegClass')
         .limit(limit * 3)
         .lean()
         .exec();
 
-      // Deduplicate by habitatName
-      const seen = new Set();
-      const unique = [];
-      for (const h of habitats) {
-        if (!seen.has(h.habitatName)) {
-          seen.add(h.habitatName);
-          unique.push({ habitatName: h.habitatName, code: h.code });
-          if (unique.length >= limit) break;
-        }
-      }
-
-      return NextResponse.json({ suggestions: unique });
+      return NextResponse.json({ suggestions: buildVegTypeSuggestions(habitats, searchText, limit) });
     }
 
     // Regular search for other fields
