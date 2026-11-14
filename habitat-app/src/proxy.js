@@ -10,8 +10,7 @@ export async function proxy(req) {
   const { pathname } = req.nextUrl;
 
   // Protected routes - redirect to login if not authenticated
-  if ((pathname.startsWith('/protected') || 
-       pathname.startsWith('/habitats/upload') || 
+  if ((pathname.startsWith('/habitats/upload') || 
        pathname.startsWith('/my-images') || 
        pathname.startsWith('/habitats')) && !token) {
     return NextResponse.redirect(new URL('/auth/signin', req.url));
@@ -27,7 +26,6 @@ export async function proxy(req) {
 
 export const config = {
   matcher: [
-    '/protected/:path*', 
     '/habitats', 
     '/habitats/:path*',
     '/habitats/upload',

@@ -2,7 +2,7 @@ import LayoutWrapper from '@/components/layout-wrapper';
 import HabitatsClient from './habitats-client';
 
 export const metadata = {
-  title: 'Vegetation Types',
+  title: 'Vegif',
   description: 'View and upload vegetation record images',
 };
 

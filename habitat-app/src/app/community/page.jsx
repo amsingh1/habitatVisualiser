@@ -5,7 +5,7 @@ import LayoutWrapper from '@/components/layout-wrapper';
 import CommunityClient from './community-client';
 
 export const metadata = {
-  title: 'Community - Vegetation Types',
+  title: 'Community - Vegif',
   description: 'View community leaderboards and statistics',
 };
 
