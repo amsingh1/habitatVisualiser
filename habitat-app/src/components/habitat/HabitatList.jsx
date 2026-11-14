@@ -684,7 +684,7 @@ export default function HabitatList({ dataType = 'habitats', userId = null }) {
         isOpen={showDeleteConfirmation}
         onClose={cancelDelete}
         onConfirm={confirmDelete}
-        title="Delete Vegetation Type"
+        title="Delete vegetation type"
         message={habitatToDelete ? (
           <>
             Are you sure you want to delete <strong>&quot;{habitatToDelete.habitatName}&quot;</strong>? This action cannot be undone and will permanently remove all associated images and data.

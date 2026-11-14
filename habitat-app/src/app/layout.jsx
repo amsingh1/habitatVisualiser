@@ -17,7 +17,7 @@ const publicSans = Public_Sans({
 });
 
 export const metadata = {
-  title: 'Vegetation Types',
+  title: 'Vegif',
   description: 'Explore and document European vegetation and habitat types.',
 };
 

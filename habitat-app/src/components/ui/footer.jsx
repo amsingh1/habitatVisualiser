@@ -12,7 +12,7 @@ export default function Footer() {
                 <path d="M8 18c3-3 6-6 11-11" />
               </svg>
             </span>
-            <span className="font-bold text-sm">Vegetation Types</span>
+            <span className="font-bold text-sm">Vegif</span>
             <span className="text-emerald-200/70 text-sm hidden sm:inline">
               &middot; Documenting Europe&rsquo;s habitats
             </span>

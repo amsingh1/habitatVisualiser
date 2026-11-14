@@ -88,7 +88,7 @@ export default function CommunityClient() {
       {/* Recently Active Section - Full Width Grid */}
       <div className="mb-12">
         <LeaderboardSection
-          title="Recently Active"
+          title="Recently active"
           users={leaderboards.recentlyActive}
           showTimestamp={true}
           layoutType="grid"
@@ -120,7 +120,7 @@ export default function CommunityClient() {
         {/* Most Uploads All Time */}
         <div>
           <LeaderboardSection
-            title="Most uploads (all times)"
+            title="Most uploads of all time"
             users={leaderboards.mostUploadsAllTime}
             showTimestamp={false}
             layoutType="list"
@@ -133,7 +133,7 @@ export default function CommunityClient() {
         {/* Number of Records */}
         <div>
           <LeaderboardSection
-            title="Number of records (all time)"
+            title="Number of records of all time"
             description="Each unique combination of vegetation type and site counts as one record. Uploading the same vegetation type from 12 different sites = 12 records."
             users={leaderboards.mostUniqueVegLocations}
             showTimestamp={false}
@@ -148,7 +148,7 @@ export default function CommunityClient() {
         {/* Number of Vegetation Types */}
         <div>
           <LeaderboardSection
-            title="Number of vegetation types (all time)"
+            title="Number of vegetation types of all time"
             description="Each unique vegetation type counts once, regardless of how many sites it was uploaded from. Uploading the same type from 12 different sites = 1 vegetation type."
             users={leaderboards.mostUniqueVegTypes}
             showTimestamp={false}

@@ -26,7 +26,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
     { id: 'habitatName', label: 'Vegetation type', enabledIn: ['habitats', 'personal'] },
     { id: 'state', label: 'State/Region', enabledIn: ['habitats', 'personal'] },
     { id: 'country', label: 'Country', enabledIn: ['habitats', 'personal'] },
-    { id: 'userName', label: 'User Name', enabledIn: ['habitats'] },
+    { id: 'userName', label: 'User name', enabledIn: ['habitats'] },
   ];
   
   // Determine which fields to show based on context
@@ -34,7 +34,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   
   // Month and sort options
   const months = [
-    { value: 'all', label: 'All Months' },
+    { value: 'all', label: 'All months' },
     { value: '1', label: 'January' },
     { value: '2', label: 'February' },
     { value: '3', label: 'March' },
@@ -51,7 +51,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   
   const currentYearValue = new Date().getFullYear();
   const years = [
-    { value: 'all', label: 'All Years' },
+    { value: 'all', label: 'All years' },
     ...Array.from({ length: currentYearValue - 2024 }, (_, i) => ({
       value: String(currentYearValue - i),
       label: String(currentYearValue - i)
@@ -59,10 +59,10 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
   ];
   
   const sortOptions = [
-    { value: 'upload_desc', label: 'Newest Upload' },
-    { value: 'upload_asc', label: 'Oldest Upload' },
-    { value: 'observation_desc', label: 'Observation Date (Recent)' },
-    { value: 'observation_asc', label: 'Observation Date (Oldest)' },
+    { value: 'upload_desc', label: 'Newest upload' },
+    { value: 'upload_asc', label: 'Oldest upload' },
+    { value: 'observation_desc', label: 'Observation date (recent)' },
+    { value: 'observation_asc', label: 'Observation date (oldest)' },
     { value: 'vegetation_asc', label: 'Vegetation A-Z' },
     { value: 'vegetation_desc', label: 'Vegetation Z-A' },
   ];
@@ -645,7 +645,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                 onClick={toggleAdvancedMode}
                 className="text-sm text-emerald-700 hover:text-emerald-900 font-medium"
               >
-                Advanced Search
+                Advanced search
               </button>
             </div>
           </>
@@ -653,13 +653,13 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
           /* Advanced Search Mode */
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-semibold text-gray-700">Advanced Search</h3>
+              <h3 className="text-sm font-semibold text-gray-700">Advanced search</h3>
               <button
                 type="button"
                 onClick={toggleAdvancedMode}
                 className="text-sm text-gray-600 hover:text-gray-800"
               >
-                × Simple Search
+                × Simple search
               </button>
             </div>
             
@@ -798,7 +798,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                     value={advancedCriteria.userName}
                     onChange={(e) => handleAdvancedInputChange('userName', e.target.value)}
                     onFocus={() => setActiveSuggestionField('userName')}
-                    placeholder="User Name..."
+                    placeholder="User name..."
                     className="flex-1 h-10 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                   />
                   {advancedCriteria.userName && (
