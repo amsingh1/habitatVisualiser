@@ -3,26 +3,28 @@ import escapeRegex from '@/lib/escapeRegex';
 /**
  * Search by vegetation type across the hierarchy.
  *
- * A record's `habitatName` is its most detailed unit (the alliance, or the
- * order/class when no alliance was chosen). `vegOrder` and `vegClass` are
- * filled automatically on upload from the alliance. Matching all three lets a
- * user find every record of an order or class, not only of one alliance.
+ * Matches `habitatName`, `vegAlliance`, `vegOrder` and `vegClass`, so a user
+ * finds every record of an order or class, not only of one alliance.
  *
- * Records uploaded before order/class were stored (before March 2026) only
- * have `habitatName`, so they are found by their own name but not by their
- * order or class.
+ * Why all four fields (from the code history, not checked against the data):
+ * - before 8 Mar 2026 records had only `habitatName` (no alliance/order/class
+ *   fields), so they are found by their own name only;
+ * - 8-25 Mar 2026 `habitatName` was saved as the class, so the alliance is
+ *   only in `vegAlliance`;
+ * - since 25 Mar 2026 `habitatName` is the alliance (or order/class if none).
  */
 
 function prefixRegex(text) {
   return { $regex: '^' + escapeRegex(text), $options: 'i' };
 }
 
-// MongoDB condition: habitatName, order or class starts with `text`.
+// MongoDB condition: habitatName, alliance, order or class starts with `text`.
 export function vegTypeCondition(text) {
   const regex = prefixRegex(text);
   return {
     $or: [
       { habitatName: regex },
+      { vegAlliance: regex },
       { vegOrder: regex },
       { vegClass: regex },
     ],
@@ -69,6 +71,7 @@ export function buildVegTypeSuggestions(records, text, limit) {
   for (const h of records) {
     if (suggestions.length >= limit) break;
     if (starts(h.habitatName) || starts(h.code)) add(h.habitatName, h.code, ownLevel(h));
+    if (starts(h.vegAlliance)) add(h.vegAlliance, '', 'Alliance');
     if (starts(h.vegOrder)) add(h.vegOrder, '', 'Order');
     if (starts(h.vegClass)) add(h.vegClass, '', 'Class');
   }

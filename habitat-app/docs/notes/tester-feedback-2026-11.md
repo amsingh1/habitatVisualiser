@@ -19,10 +19,18 @@ order **or** its class (`src/lib/vegTypeSearch.js`). Suggestions show the
 level ("Alliance", "Order", "Class") and the code when there is one.
 Choosing an order or class lists every record that belongs to it.
 
-Known gap: records uploaded before March 2026 (commit `f4ef2d0`) have no
-`vegOrder`/`vegClass` stored, so they are found by their own name but not by
-their order or class. The backfill script planned in item 4 should also fill
-`vegOrder` and `vegClass` for those records, from their `code`.
+What is stored depends on when a record was created. This comes from the code
+history and has not been checked against the database:
+
+- before 8 Mar 2026 (commit `f4ef2d0`): only `habitatName`, no
+  alliance/order/class fields. Found by their own name only, unless edited
+  and saved since. Count them with
+  `db.habitats.countDocuments({ $or: [{ vegClass: { $in: ["", null] } }, { vegClass: { $exists: false } }] })`.
+  The backfill in item 4 should fill `vegOrder`/`vegClass` for them.
+- 8-25 Mar 2026 (until commit `cda6a85`): `habitatName` was saved as the
+  class and the alliance only in `vegAlliance`, which is why the search also
+  matches `vegAlliance`.
+- since 25 Mar 2026: `habitatName` is the alliance (or order/class if none).
 
 ## Findings that the other items depend on
 
