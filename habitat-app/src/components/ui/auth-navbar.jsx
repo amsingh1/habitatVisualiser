@@ -27,7 +27,7 @@ export default function AuthNavBar() {
   const navLinks = session && [
     // { href: "/protected/dashboard", label: "Dashboard" },
     { href: "/habitats", label: "Explore" },
-    { href: "/my-images", label: "My Observations" },
+    { href: "/my-images", label: "My observations" },
     { href: "/community", label: "Community" }
   ];
 
@@ -94,7 +94,7 @@ export default function AuthNavBar() {
       {!loading && session && (
         <>
         <Link href="/habitats/upload" className={pathname === '/habitats/upload' ? activeLinkClasses : actionButtonClasses}>
-          Upload New Vegetation Record
+          Upload new vegetation record
         </Link>
           {/* Nav Links */}
           {navLinks.map(link => (
@@ -189,7 +189,7 @@ export default function AuthNavBar() {
                 </div>
 
                <Link href="/habitats/upload" className={`block mx-2 ${pathname === '/habitats/upload' ? activeLinkClasses : actionButtonClasses}`}>
-                Upload New Vegetation Record
+                Upload new vegetation record
               </Link>
                 {/* Mobile Nav Links */}
                 {navLinks.map(link => (

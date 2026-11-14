@@ -1,7 +1,7 @@
 import SignUpForm from './signup-form';
 
 export const metadata = {
-  title: 'Sign Up',
+  title: 'Sign up',
   description: 'Create a new account',
 };
 

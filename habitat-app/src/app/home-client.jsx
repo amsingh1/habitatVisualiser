@@ -69,7 +69,7 @@ function LoggedOutHome() {
             <span className="flex items-center justify-center h-11 w-11 rounded-xl bg-emerald-50 text-emerald-700">
               <LeafIcon />
             </span>
-            <h3 className="mt-4 text-lg font-bold text-stone-900">Explore habitats</h3>
+            <h3 className="mt-4 text-lg font-bold text-stone-900">Explore vegetation types</h3>
             <p className="mt-2 text-sm text-stone-600">
               Browse a growing record of European vegetation and habitat types, mapped by location and classification.
             </p>
@@ -159,7 +159,7 @@ function RecentlyAdded() {
 
   return (
     <section className="mt-10">
-      <h2 className="text-lg font-bold text-stone-900 mb-4">Recently added habitats</h2>
+      <h2 className="text-lg font-bold text-stone-900 mb-4">Recently added records</h2>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {data.sliderImages.map((image, index) => (
           <div key={index} className="bg-white border border-stone-200 rounded-xl overflow-hidden">
@@ -202,7 +202,7 @@ function LoggedInHome({ session }) {
           <span className="flex items-center justify-center h-10 w-10 rounded-xl bg-emerald-50 text-emerald-700">
             <LeafIcon width={20} height={20} />
           </span>
-          <h3 className="mt-4 font-bold text-stone-900">Explore habitats</h3>
+          <h3 className="mt-4 font-bold text-stone-900">Explore vegetation types</h3>
           <p className="mt-1.5 text-sm text-stone-600">Browse the full catalogue and map.</p>
         </Link>
         <Link href="/community" className="bg-white border border-stone-200 rounded-2xl p-6 hover:border-emerald-600 transition-colors">

@@ -645,7 +645,7 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
                 onClick={toggleAdvancedMode}
                 className="text-sm text-emerald-700 hover:text-emerald-900 font-medium"
               >
-                Advanced Search
+                Advanced search
               </button>
             </div>
           </>
@@ -653,13 +653,13 @@ export default function SearchHabitatComponent({ context = 'habitats' }) {
           /* Advanced Search Mode */
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-semibold text-gray-700">Advanced Search</h3>
+              <h3 className="text-sm font-semibold text-gray-700">Advanced search</h3>
               <button
                 type="button"
                 onClick={toggleAdvancedMode}
                 className="text-sm text-gray-600 hover:text-gray-800"
               >
-                × Simple Search
+                × Simple search
               </button>
             </div>
             

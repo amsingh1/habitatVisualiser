@@ -987,7 +987,7 @@ export default function HabitatUpload() {
 
   return (
     <div className="bg-white shadow rounded-lg p-6 mb-6">
-      <h2 className="text-2xl font-bold mb-4">{isEditing ? 'Edit Vegetation Record' : 'Upload New Vegetation Record'}</h2>
+      <h2 className="text-2xl font-bold mb-4">{isEditing ? 'Edit vegetation record' : 'Upload new vegetation record'}</h2>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -1014,7 +1014,7 @@ export default function HabitatUpload() {
             {/* Show existing images if editing */}
             {isEditing && existingImages && existingImages.length > 0 && (
               <>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Current Images:</h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Current images:</h3>
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   {existingImages.map((imageUrl, index) => (
                     <div key={`existing-${index}`} className="relative h-64 inline-block">
@@ -1046,7 +1046,7 @@ export default function HabitatUpload() {
             {/* Show new file previews */}
             {previews && previews.length > 0 && (
               <>
-                {isEditing && <h3 className="text-sm font-medium text-gray-700 mb-2">New Images to Add:</h3>}
+                {isEditing && <h3 className="text-sm font-medium text-gray-700 mb-2">New images to add:</h3>}
                 <div className="grid grid-cols-3 gap-4">
                   {previews.map((preview, index) => {
                     const photoError = uploadErrors[index];
