@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { mergeAutoField } from '@/lib/autoLocation';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
@@ -196,6 +197,55 @@ export default function HabitatUpload() {
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [coordinateUncertainty, setCoordinateUncertainty] = useState('');
+
+  // State/Region and Country are filled automatically from the photo GPS, the
+  // map or typed coordinates, but only while the user has not typed in them.
+  // A user's text (including a site name added after the region) is never
+  // replaced; the found location is offered as a suggestion instead.
+  const lastAutoStateRef = useRef('');   // value the app filled last
+  const lastAutoCountryRef = useRef('');
+  const locationRef = useRef({ state: '', country: '' }); // latest field values
+  // Coordinates whose location is already known (loaded from the saved record,
+  // or looked up by the map), so they are not looked up again.
+  const locatedCoordsRef = useRef('');
+  const [locationSuggestion, setLocationSuggestion] = useState(null); // { state, country }
+
+  useEffect(() => {
+    locationRef.current = { state, country };
+  }, [state, country]);
+
+  const applyAutoLocation = useCallback((foundState, foundCountry) => {
+    const { state: curState, country: curCountry } = locationRef.current;
+    const s = mergeAutoField(curState, lastAutoStateRef.current, foundState);
+    // Keep the two fields consistent: if the region is only suggested (the user
+    // typed it), suggest the country too instead of changing it on its own.
+    const c = s.suggestion
+      ? { value: curCountry, lastAuto: lastAutoCountryRef.current,
+          suggestion: (foundCountry || '').trim() && (foundCountry || '').trim() !== (curCountry || '').trim()
+            ? foundCountry.trim() : '' }
+      : mergeAutoField(curCountry, lastAutoCountryRef.current, foundCountry);
+    lastAutoStateRef.current = s.lastAuto;
+    lastAutoCountryRef.current = c.lastAuto;
+    if (s.value !== curState) setState(s.value);
+    if (c.value !== curCountry) setCountry(c.value);
+    setLocationSuggestion(s.suggestion || c.suggestion
+      ? { state: s.suggestion, country: c.suggestion }
+      : null);
+  }, []);
+
+  // "Use this" on the suggestion: replace the user's text with the found location.
+  const applySuggestedLocation = () => {
+    if (!locationSuggestion) return;
+    if (locationSuggestion.state) {
+      setState(locationSuggestion.state);
+      lastAutoStateRef.current = locationSuggestion.state;
+    }
+    if (locationSuggestion.country) {
+      setCountry(locationSuggestion.country);
+      lastAutoCountryRef.current = locationSuggestion.country;
+    }
+    setLocationSuggestion(null);
+  };
   const [success, setSuccess] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
@@ -323,6 +373,8 @@ export default function HabitatUpload() {
         if (habitat.gpsCoordinate) {
           const coords = habitat.gpsCoordinate.split(',');
           if (coords.length === 2) {
+            // Keep the saved State/Region and Country: do not look these up again.
+            locatedCoordsRef.current = `${parseFloat(coords[0])},${parseFloat(coords[1])}`;
             setLatitude(coords[0].trim());
             setLongitude(coords[1].trim());
           }
@@ -463,11 +515,19 @@ export default function HabitatUpload() {
       const lng = parseFloat(longitude);
       
       if (!latitude || !longitude || isNaN(lat) || isNaN(lng)) {
+        setLocationSuggestion(null);
         return;
       }
       
       // Validate coordinate ranges
       if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return;
+      }
+
+      // Location already known for these coordinates (saved record, or the
+      // map looked it up): do not look it up again.
+      const coordsKey = `${lat},${lng}`;
+      if (locatedCoordsRef.current === coordsKey) {
         return;
       }
       
@@ -503,13 +563,11 @@ export default function HabitatUpload() {
           // Get country
           const countryValue = data.address.country || '';
           
-          // Update state and country whenever coordinates change
-          if (stateValue) {
-            setState(stateValue);
-          }
-          
-          if (countryValue) {
-            setCountry(countryValue);
+          // Fill State/Region and Country unless the user has typed in them
+          // (then the found location is offered as a suggestion)
+          if (stateValue || countryValue) {
+            locatedCoordsRef.current = coordsKey;
+            applyAutoLocation(stateValue, countryValue);
           }
         }
       } catch (error) {
@@ -523,7 +581,7 @@ export default function HabitatUpload() {
     // Debounce the geocoding to avoid too many API calls
     const debounceTimer = setTimeout(reverseGeocode, 800);
     return () => clearTimeout(debounceTimer);
-  }, [latitude, longitude]); // Only depend on coordinates, not state/country to avoid loops
+  }, [latitude, longitude, applyAutoLocation]); // Only depend on coordinates, not state/country to avoid loops
   // Checks picked/dropped files against the upload limits (type, size,
   // megapixels, photos per record) and adds the ones that pass.
   const addFiles = async (incoming) => {
@@ -1362,11 +1420,15 @@ export default function HabitatUpload() {
                 onSelectCoordinate={(value, stateValue, countryValue) => {
                   const coords = value.split(',');
                   if (coords.length === 2) {
+                    // The map already looked up the location: use it and skip
+                    // the second lookup the coordinate change would start.
+                    if (stateValue || countryValue) {
+                      locatedCoordsRef.current = `${parseFloat(coords[0])},${parseFloat(coords[1])}`;
+                      applyAutoLocation(stateValue, countryValue);
+                    }
                     setLatitude(coords[0].trim());
                     setLongitude(coords[1].trim());
                   }
-                  setState(stateValue); 
-                  setCountry(countryValue);
                 }}
               />
             </div>
@@ -1407,6 +1469,23 @@ export default function HabitatUpload() {
               />
             </div>
           </div>
+          {locationSuggestion && (
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-600">
+              <span>
+                Location suggests:{' '}
+                <span className="font-medium text-gray-800">
+                  {[locationSuggestion.state, locationSuggestion.country].filter(Boolean).join(', ')}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={applySuggestedLocation}
+                className="font-medium text-emerald-700 hover:text-emerald-900 underline"
+              >
+                Use this
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="mb-4">
