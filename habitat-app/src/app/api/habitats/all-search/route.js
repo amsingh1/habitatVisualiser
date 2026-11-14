@@ -5,6 +5,7 @@ import Habitat from '@/models/Habitat';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import escapeRegex from '@/lib/escapeRegex';
+import wordStartRegex from '@/lib/wordStartRegex';
 
 export async function GET(req) {
   try {
@@ -72,7 +73,8 @@ export async function GET(req) {
 
       if (advancedState && advancedState.trim()) {
         andConditions.push({
-          state: { $regex: '^' + escapeRegex(advancedState.trim()), $options: 'i' }
+          // State/Region: match the start of any word (region or site name)
+          state: wordStartRegex(advancedState.trim())
         });
       }
 
@@ -92,7 +94,10 @@ export async function GET(req) {
       // Simple search mode - If search text is provided, add text search condition
       // Create search condition for the selected field - using exact match (case insensitive)
       andConditions.push({
-        [searchField]: { $regex: `^${escapeRegex(searchText)}`, $options: 'i' }
+        // State/Region: match the start of any word (region or site name)
+        [searchField]: searchField === 'state'
+          ? wordStartRegex(searchText)
+          : { $regex: `^${escapeRegex(searchText)}`, $options: 'i' }
       });
     }
     
