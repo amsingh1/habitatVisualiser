@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Habitat from '@/models/Habitat';
+import EuVegUnits from '@/models/eu_veg_units';
+import escapeRegex from '@/lib/escapeRegex';
+import { resolveVegCodes } from '@/lib/vegCodes';
 import { parseCoordinateUncertainty } from '@/lib/coordinateUncertainty';
 import { validateImageUrls } from '@/lib/imageUpload';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+
+// Reference units (eu_veg_units) with this exact name, ignoring case.
+const findUnitsByName = (name) =>
+  EuVegUnits.find({ name_without_authority: { $regex: '^' + escapeRegex(name) + '$', $options: 'i' } })
+    .select('code EVC_code')
+    .lean();
 
 // Handler for POST requests to create a new habitat entry
 export async function POST(req) {
@@ -81,6 +90,14 @@ export async function POST(req) {
       vegOrder: vegOrder || '',
       vegAlliance: vegAlliance || '',
     };
+
+    // Codes of the most detailed chosen unit (alliance, else order, else class)
+    const codes = await resolveVegCodes(
+      { vegClass, vegOrder, vegAlliance, habitatName: habitatData.habitatName },
+      findUnitsByName
+    );
+    habitatData.code = codes?.code || '';
+    habitatData.EVC_code = codes?.EVC_code || '';
     
     console.log("Habitat data to save:", habitatData);
     
@@ -394,6 +411,20 @@ export async function PUT(req) {
       vegOrder: vegOrder !== undefined ? vegOrder : existingHabitat.vegOrder,
       vegAlliance: vegAlliance !== undefined ? vegAlliance : existingHabitat.vegAlliance,
     };
+
+    // Vegetation type sent: refresh its codes so they follow a changed alliance.
+    // A name not in the reference list keeps the codes already saved.
+    if (vegClass !== undefined || vegOrder !== undefined || vegAlliance !== undefined) {
+      const codes = await resolveVegCodes(
+        { vegClass: resolvedVegClass, vegOrder: resolvedVegOrder, vegAlliance: resolvedVegAlliance,
+          habitatName: updateData.habitatName },
+        findUnitsByName
+      );
+      if (codes) {
+        updateData.code = codes.code;
+        updateData.EVC_code = codes.EVC_code;
+      }
+    }
     
     // Only touch the field when the client sent it; null clears it
     const updateOps = { $set: updateData };
