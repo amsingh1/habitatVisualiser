@@ -5,6 +5,7 @@ import connectDB from '@/lib/mongodb';
 import Habitat from '@/models/Habitat';
 import User from '@/models/User';
 import archiver from 'archiver';
+import { generateCSV, imageBaseNames } from '@/lib/exportFormat';
 
 // Simple Download Service - works with URLs as-is
 class DownloadService {
@@ -122,74 +123,6 @@ class DownloadService {
     
     return typeMap[contentType?.split(';')[0]] || 'jpg';
   }
-
-  sanitizeFilename(filename) {
-    return filename.replace(/[^a-z0-9\-_\.]/gi, '_');
-  }
-}
-
-// Generate CSV for habitat metadata
-// Each image gets its own row with a unique Image ID that matches the filename
-function generateCSV(habitats) {
-  const headers = [
-    'Habitat ID', 'Image ID', 'Habitat Name', 'State', 'Country', 'GPS Coordinate', 'Coordinate Uncertainty (m)', 'Date', 
-    'Dominant Species 1', 'Dominant Species 2', 'Dominant Species 3',
-    'Notes', 'Code', 'EVC Code', 'Author Name', 'Author Email', 'Created At'
-  ].join(',');
-
-  const rows = [];
-  
-  habitats.forEach(habitat => {
-    const imageCount = habitat.imageUrl ? habitat.imageUrl.length : 0;
-    
-    if (imageCount === 0) {
-      // If no images, still create one row with empty Image ID
-      rows.push([
-        `"${habitat._id}"`,
-        `""`,
-        `"${habitat.habitatName || ''}"`,
-        `"${habitat.state || ''}"`,
-        `"${habitat.country || ''}"`,
-        `"${habitat.gpsCoordinate || ''}"`,
-        `"${habitat.coordinateUncertaintyMeters ?? ''}"`,
-        `"${habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : ''}"`,
-        `"${habitat.dominantSpecies1 || ''}"`,
-        `"${habitat.dominantSpecies2 || ''}"`,
-        `"${habitat.dominantSpecies3 || ''}"`,
-        `"${(habitat.notes || '').replace(/"/g, '""')}"`,
-        `"${habitat.code || ''}"`,
-        `"${habitat.EVC_code || ''}"`,
-        `"${habitat.userName || ''}"`,
-        `"${habitat.userEmail || ''}"`,
-        `"${new Date(habitat.createdAt).toISOString()}"`
-      ].join(','));
-    } else {
-      // Create one row per image
-      for (let i = 0; i < imageCount; i++) {
-        rows.push([
-          `"${habitat._id}"`,
-          `"image_${i + 1}"`,
-          `"${habitat.habitatName || ''}"`,
-          `"${habitat.state || ''}"`,
-          `"${habitat.country || ''}"`,
-          `"${habitat.gpsCoordinate || ''}"`,
-          `"${habitat.coordinateUncertaintyMeters ?? ''}"`,
-          `"${habitat.date ? new Date(habitat.date).toISOString().split('T')[0] : ''}"`,
-          `"${habitat.dominantSpecies1 || ''}"`,
-          `"${habitat.dominantSpecies2 || ''}"`,
-          `"${habitat.dominantSpecies3 || ''}"`,
-          `"${(habitat.notes || '').replace(/"/g, '""')}"`,
-          `"${habitat.code || ''}"`,
-          `"${habitat.EVC_code || ''}"`,
-          `"${habitat.userName || ''}"`,
-          `"${habitat.userEmail || ''}"`,
-          `"${new Date(habitat.createdAt).toISOString()}"`
-        ].join(','));
-      }
-    }
-  });
-
-  return headers + '\n' + rows.join('\n');
 }
 
 export async function POST(req) {
@@ -286,13 +219,12 @@ export async function POST(req) {
             archive.append(Buffer.from(csvWithBOM, 'utf8'), { name: `habitat_metadata_${timestamp}.csv` });
           }
 
-          // Process images
+          // Process images: all in one folder, each with a unique name
+          // (<alliance>_<EVC code>_<record id>_<n>), matching the CSV Image ID
+          const baseNames = imageBaseNames(habitats);
           for (const habitat of habitats) {
             if (!habitat.imageUrl?.length) continue;
-
-            const habitatFolder = downloadService.sanitizeFilename(
-              `${habitat.habitatName}_${habitat._id.toString().slice(-6)}`
-            );
+            const names = baseNames.get(String(habitat._id)) || [];
 
             for (let i = 0; i < habitat.imageUrl.length; i++) {
               const imageUrl = habitat.imageUrl[i];
@@ -301,7 +233,7 @@ export async function POST(req) {
                 
                 const imageData = await downloadService.downloadImageWithRetry(imageUrl);
                 const extension = downloadService.getFileExtension(imageUrl, imageData.contentType);
-                const filename = `${habitatFolder}/image_${i + 1}.${extension}`;
+                const filename = `images/${names[i]}.${extension}`;
                 
                 archive.append(imageData.buffer, { name: filename });
               } catch (error) {
@@ -329,7 +261,7 @@ export async function POST(req) {
                 ].join('\n');
                 
                 archive.append(errorReport, { 
-                  name: `${habitatFolder}/ERROR_image_${i + 1}.txt` 
+                  name: `images/ERROR_${names[i]}.txt` 
                 });
               }
             }
